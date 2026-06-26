@@ -46,10 +46,10 @@ export default function Dashboard({ session }) {
     if (data) setMemory(data)
   }
 
-  async function createCampaign(name, system, lore) {
+  async function createCampaign(name, system, lore, rulesReference, bgImageUrl) {
     const { data, error } = await supabase
       .from('campaigns')
-      .insert({ user_id: session.user.id, name, system, lore })
+      .insert({ user_id: session.user.id, name, system, lore, rules_reference: rulesReference, bg_image_url: bgImageUrl })
       .select()
       .single()
     if (!error && data) {
@@ -95,36 +95,15 @@ export default function Dashboard({ session }) {
 
       <div style={s.tabs}>
         {['session', 'campaigns', 'memory'].map(t => (
-          <button key={t} style={tab === t ? s.tabOn : s.tab}
-            onClick={() => setTab(t)}>
+          <button key={t} style={tab === t ? s.tabOn : s.tab} onClick={() => setTab(t)}>
             {t === 'session' ? '▶ Session' : t === 'campaigns' ? '📖 Campaigns' : '🧠 Memory'}
           </button>
         ))}
       </div>
 
-      {tab === 'session' && (
-        <Session
-          campaign={activeCampaign}
-          memory={memory}
-          onAddMemory={addMemory}
-          onGoToCampaigns={() => setTab('campaigns')}
-        />
-      )}
-      {tab === 'campaigns' && (
-        <Campaigns
-          campaigns={campaigns}
-          activeCampaign={activeCampaign}
-          onSelect={selectCampaign}
-          onCreate={createCampaign}
-        />
-      )}
-      {tab === 'memory' && (
-        <Memory
-          campaign={activeCampaign}
-          memory={memory}
-          onDelete={deleteMemory}
-        />
-      )}
+      {tab === 'session' && <Session campaign={activeCampaign} memory={memory} onAddMemory={addMemory} onGoToCampaigns={() => setTab('campaigns')} />}
+      {tab === 'campaigns' && <Campaigns campaigns={campaigns} activeCampaign={activeCampaign} onSelect={selectCampaign} onCreate={createCampaign} />}
+      {tab === 'memory' && <Memory campaign={activeCampaign} memory={memory} onDelete={deleteMemory} />}
     </div>
   )
 }
