@@ -197,7 +197,22 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
           {imgLoading && <div style={s.imgLoading}>🎨 Generating image...</div>}
           {generatedImage && (
             <div style={s.genImage}>
-              <img src={generatedImage} alt="AI generated scene" style={s.genImg} />
+              <img
+                src={generatedImage}
+                alt="AI generated scene"
+                style={s.genImg}
+                crossOrigin="anonymous"
+                onError={(e) => {
+                  e.target.style.display = 'none'
+                  document.getElementById('img-fallback').style.display = 'block'
+                }}
+              />
+              <div id="img-fallback" style={{ display: 'none', padding: 12, textAlign: 'center' }}>
+                <a href={generatedImage} target="_blank" rel="noreferrer"
+                  style={{ color: '#b4aef5', fontSize: 13 }}>
+                  🖼️ Image generated — click to open in new tab
+                </a>
+              </div>
             </div>
           )}
           {(lastOut || generatedImage) && !loading && (
