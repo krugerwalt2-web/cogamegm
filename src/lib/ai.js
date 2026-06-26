@@ -27,22 +27,43 @@ export async function askAI(systemPrompt, userMessage) {
 export async function generateImage(prompt, style) {
   const stylePrefix = style || 'fantasy tabletop RPG art, detailed illustration, dramatic lighting'
   const fullPrompt = stylePrefix + ', ' + prompt
-  const response = await fetch('https://fal.run/fal-ai/flux/schnell', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Key ' + FAL_KEY
-    },
-    body: JSON.stringify({
-      prompt: fullPrompt,
-      image_size: 'landscape_4_3',
-      num_inference_steps: 4,
-      num_images: 1
-    })
-  })
-  const data = await response.json()
-  if (data.images && data.images[0]) return data.images[0].url
-  throw new Error('Image generation failed')
+
+  const endpoints = [
+    'https://fal.run/fal-ai/fast-sdxl',
+    'https://fal.run/fal-ai/flux/schnell',
+    'https://fal.run/fal-ai/stable-diffusion-v3-medium',
+  ]
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Key ' + FAL_KEY
+        },
+        body: JSON.stringify({
+          prompt: fullPrompt,
+          image_size: 'landscape_4_3',
+          num_inference_steps: 4,
+          num_images: 1,
+          sync_mode: true
+        })
+      })
+      if (!response.ok) {
+        console.warn('fal.ai endpoint failed:', endpoint, response.status)
+        continue
+      }
+      const data = await response.json()
+      console.log('fal.ai response:', JSON.stringify(data).slice(0, 300))
+      if (data.images && data.images[0]) return data.images[0].url
+      if (data.image && data.image.url) return data.image.url
+      if (data.output && data.output[0]) return data.output[0]
+    } catch (e) {
+      console.warn('fal.ai endpoint error:', endpoint, e.message)
+    }
+  }
+  throw new Error('All image endpoints failed — check fal.ai key and account credits')
 }
 
 export function detectIntent(text) {
