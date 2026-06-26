@@ -42,17 +42,33 @@ export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreat
     const reader = new FileReader()
     reader.onload = (ev) => {
       const text = ev.target.result
-      setUploadedDoc(text.slice(0, 8000))
+      // Sanitize: remove null bytes and control characters, trim to 4000 chars
+      const clean = text
+        .replace(/\0/g, '')
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 4000)
+      setUploadedDoc(clean)
     }
-    reader.readAsText(file)
+    reader.onerror = () => {
+      setUploadName('Error reading file — try a different file')
+      setUploadedDoc('')
+    }
+    reader.readAsText(file, 'UTF-8')
   }
 
   async function handleCreate() {
     if (!name.trim()) return
     setLoading(true)
-    const combinedLore = lore + (uploadedDoc ? '\n\n--- Uploaded document ---\n' + uploadedDoc : '')
-    await onCreate(name.trim(), system, combinedLore.trim() || 'A fantasy world.', rulesRef.trim(), bgUrl.trim())
-    setName(''); setLore(''); setRulesRef(''); setBgUrl(''); setUploadedDoc(''); setUploadName('')
+    try {
+      const docSection = uploadedDoc ? '\n\n--- Uploaded lore document ---\n' + uploadedDoc : ''
+      const combinedLore = (lore + docSection).trim() || 'A fantasy world.'
+      await onCreate(name.trim(), system, combinedLore, rulesRef.trim(), bgUrl.trim())
+      setName(''); setLore(''); setRulesRef(''); setBgUrl(''); setUploadedDoc(''); setUploadName('')
+    } catch (err) {
+      alert('Error creating campaign: ' + err.message)
+    }
     setLoading(false)
   }
 
