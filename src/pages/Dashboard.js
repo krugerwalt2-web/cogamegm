@@ -49,10 +49,18 @@ export default function Dashboard({ session }) {
   async function createCampaign(name, system, lore, rulesReference, bgImageUrl) {
     const { data, error } = await supabase
       .from('campaigns')
-      .insert({ user_id: session.user.id, name, system, lore, rules_reference: rulesReference, bg_image_url: bgImageUrl })
+      .insert({
+        user_id: session.user.id,
+        name,
+        system,
+        lore: lore || '',
+        rules_reference: rulesReference || '',
+        bg_image_url: bgImageUrl || ''
+      })
       .select()
       .single()
-    if (!error && data) {
+    if (error) throw new Error(error.message)
+    if (data) {
       setCampaigns(prev => [data, ...prev])
       setActiveCampaign(data)
       setTab('session')
