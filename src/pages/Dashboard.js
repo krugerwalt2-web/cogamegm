@@ -64,20 +64,52 @@ export default function Dashboard({ session }) {
       const npcs = sceneData?.scene_npcs || []
       setActiveCampaign({ ...data, scene_npcs: npcs })
       setTab('session')
-      // Auto-save one shot overview and NPCs to memory
-      if (sceneData?.scene_npcs?.length) {
-        const memEntries = [
-          { campaign_id: data.id, user_id: session.user.id, tag: 'plot', text: 'Scene: ' + name + ' — ' + (sceneData.lore || '').replace(/\n/g, ' ').slice(0, 150) },
-          ...sceneData.scene_npcs.map(npc => ({
-            campaign_id: data.id, user_id: session.user.id, tag: 'npc',
-            text: npc.name + ' — ' + npc.role + ', ' + npc.tone + '. Wants: ' + npc.motivation
-          })),
-        ]
-        if (sceneData.scene_environment) {
-          memEntries.push({ campaign_id: data.id, user_id: session.user.id, tag: 'environment', text: sceneData.scene_environment.slice(0, 120) })
+      // Auto-save one shot overview to memory
+      if (sceneData) {
+        const memEntries = []
+        // Scene overview — hook, complication, goal
+        const overview = [
+          '🎲 ' + name,
+          sceneData.scene_tone ? 'Tone: ' + sceneData.scene_tone : '',
+          sceneData.scene_hook ? 'Hook: ' + sceneData.scene_hook : '',
+          sceneData.scene_complication ? 'Twist: ' + sceneData.scene_complication : '',
+          sceneData.scene_goal ? 'Goal: ' + sceneData.scene_goal : '',
+        ].filter(Boolean).join(' | ')
+        memEntries.push({
+          campaign_id: data.id,
+          user_id: session.user.id,
+          tag: 'plot',
+          text: overview.slice(0, 300)
+        })
+        // Each NPC
+        if (sceneData.scene_npcs?.length) {
+          sceneData.scene_npcs.forEach(npc => {
+            if (npc.name) memEntries.push({
+              campaign_id: data.id,
+              user_id: session.user.id,
+              tag: 'npc',
+              text: npc.name + ' — ' + (npc.role || '') + ', ' + (npc.tone || '') + '. Wants: ' + (npc.motivation || '')
+            })
+          })
         }
-        await supabase.from('memories').insert(memEntries)
-        setMemory(memEntries.map((m, i) => ({ ...m, id: 'temp_' + i, created_at: new Date().toISOString() })))
+        // Environment challenge
+        if (sceneData.scene_environment) {
+          memEntries.push({
+            campaign_id: data.id,
+            user_id: session.user.id,
+            tag: 'environment',
+            text: sceneData.scene_environment.slice(0, 200)
+          })
+        }
+        // Insert all and update local state
+        const { data: memData, error: memError } = await supabase.from('memories').insert(memEntries).select()
+        if (!memError && memData) {
+          setMemory(memData)
+        } else if (memError) {
+          console.error('Memory save error:', memError.message)
+          // Still show in UI even if DB failed
+          setMemory(memEntries.map((m, i) => ({ ...m, id: 'temp_' + i, created_at: new Date().toISOString() })))
+        }
       }
     }
   }
@@ -133,8 +165,14 @@ export default function Dashboard({ session }) {
 
   async function handleOneShotCreate(sceneData) {
     setShowOneShot(false)
-    await createCampaign(sceneData.name, sceneData.system || 'D&D 5e', sceneData.lore, sceneData.rules_reference, '', sceneData)
-
+    await createCampaign(
+      sceneData.name,
+      sceneData.system || 'D&D 5e',
+      sceneData.lore || '',
+      sceneData.rules_reference || '',
+      '',
+      sceneData
+    )
   }
 
   return (
