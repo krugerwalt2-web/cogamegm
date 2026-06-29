@@ -63,6 +63,20 @@ ATTRIBUTES: Body, Agility, Reaction, Strength, Willpower, Logic, Intuition, Char
 SOCIAL: Face off with Social limit. Etiquette avoids default penalties in social situations.
 CONTACTS: Connection (how useful) + Loyalty (how willing to help). Roll Connection for info, Loyalty for favors.`
   },
+  'Marvel Multiverse RPG': {
+    name: 'Marvel Multiverse Role-Playing Game',
+    rules: `CORE MECHANICS: Roll 3d6 (called the Marvel die set). Middle die is the Marvel die — if it shows the Marvel logo (1), something spectacular happens. Total all 3 dice + relevant ability rank vs Difficulty Number (DN).
+ABILITY RANKS: Ranks 0-20+. Rank 1=Basic, 6=Remarkable, 10=Incredible, 15=Amazing, 20=Fantastic.
+SIX ABILITIES: Might (physical power, melee), Agility (speed, ranged, defense), Resilience (endurance, damage soak), Vigilance (awareness, initiative), Ego (willpower, psychic, social), Logic (intelligence, tech, knowledge).
+EDGES & TROUBLES: Edge = roll an extra die drop lowest (advantage). Trouble = roll extra die drop highest (disadvantage). Multiple edges/troubles cancel each other.
+INITIATIVE: Vigilance rank determines turn order. Ties go to higher Agility.
+COMBAT: Attack roll vs DN set by target's defense. Damage = weapon/power damage + Might (melee) or Agility (ranged) modifier.
+DAMAGE & HEALTH: Characters have Health. Damage reduces Health. Reach 0 = Defeated (not dead). Recover with rest or medical help.
+POWERS: Each hero has a Power Set with specific powers. Using powers costs no resource — they are always available. Signature powers are extra powerful versions.
+KARMA: Players earn Karma points for heroic actions, roleplaying flaws, and narrative contributions. Spend Karma to reroll dice, add to totals, or activate special effects.
+TEAMS: Heroes in the same scene can use Teamwork — one hero helps another, granting an Edge on their roll.
+NARRATOR (GM): Called the Narrator. Sets Difficulty Numbers: Easy=10, Average=13, Challenging=17, Incredible=21, Phenomenal=25.`
+  },
   'Custom / Homebrew': {
     name: 'Custom or Homebrew System',
     rules: `No pre-loaded rules. Use the World Lore and Rules Reference fields in your campaign to define your system's mechanics. The AI will reference whatever rules context you provide.`
