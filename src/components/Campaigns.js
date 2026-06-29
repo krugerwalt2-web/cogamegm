@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react'
 
-const SYSTEM_LIST = ['D&D 5e', 'Pathfinder 2e', 'Daggerheart', 'Call of Cthulhu 7e', 'Shadowrun 6e', 'Custom / Homebrew']
-const SYSTEM_PACKS_LOADED = ['D&D 5e', 'Pathfinder 2e', 'Daggerheart', 'Call of Cthulhu 7e', 'Shadowrun 6e']
+const SYSTEM_LIST = ['D&D 5e', 'Pathfinder 2e', 'Daggerheart', 'Call of Cthulhu 7e', 'Shadowrun 6e', 'Marvel Multiverse RPG', 'Custom / Homebrew']
+const SYSTEM_PACKS_LOADED = ['D&D 5e', 'Pathfinder 2e', 'Daggerheart', 'Call of Cthulhu 7e', 'Shadowrun 6e', 'Marvel Multiverse RPG']
 
 const s = {
   card: { background: '#1a1830', border: '1px solid #2d2a4a', borderRadius: 12, padding: '16px 20px', marginBottom: 12 },
@@ -21,6 +21,7 @@ const s = {
   csub: { fontSize: 12, color: '#a49fc8' },
   cmeta: { marginLeft: 'auto', fontSize: 11, color: '#6b6890', display: 'flex', gap: 8, alignItems: 'center' },
   editBtn: { fontSize: 11, padding: '2px 8px', border: '1px solid #2d2a4a', borderRadius: 5, background: 'transparent', color: '#a49fc8', cursor: 'pointer' },
+  delBtn: { fontSize: 11, padding: '2px 8px', border: '1px solid #5a2020', borderRadius: 5, background: 'transparent', color: '#e06060', cursor: 'pointer' },
   empty: { fontSize: 13, color: '#6b6890', fontStyle: 'italic' },
   editPanel: { background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 10, padding: 14, marginTop: 8 },
   editTitle: { fontSize: 13, fontWeight: 600, color: '#fffffe', marginBottom: 10 },
@@ -29,7 +30,7 @@ const s = {
   cancelBtn: { padding: 8, background: 'transparent', border: '1px solid #2d2a4a', borderRadius: 7, fontSize: 13, color: '#a49fc8', cursor: 'pointer' },
 }
 
-export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreate, onUpdate }) {
+export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreate, onUpdate, onDelete }) {
   const [name, setName] = useState('')
   const [system, setSystem] = useState('D&D 5e')
   const [lore, setLore] = useState('')
@@ -75,6 +76,12 @@ export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreat
       await onUpdate(editingId, editData)
       setEditingId(null)
     } catch (e) { alert('Error saving: ' + e.message) }
+  }
+
+  async function handleDelete(c, e) {
+    e.stopPropagation()
+    if (!window.confirm('Delete "' + c.name + '"? This also deletes all its memories and cannot be undone.')) return
+    try { await onDelete(c.id) } catch (e) { alert('Error: ' + e.message) }
   }
 
   return (
@@ -124,6 +131,7 @@ export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreat
               <div style={s.cmeta}>
                 <span>{new Date(c.created_at).toLocaleDateString()}</span>
                 <button style={s.editBtn} onClick={e => startEdit(c, e)}>✏️ Edit</button>
+                <button style={s.delBtn} onClick={e => handleDelete(c, e)}>🗑️</button>
               </div>
             </div>
             {editingId === c.id && (
