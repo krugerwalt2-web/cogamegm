@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { askAI, generateImage, detectIntent, buildSystemPrompt, getDescriptionType } from '../lib/ai'
-import { playScene, stopAll, SCENE_OPTIONS } from '../lib/audio'
+import { playScene, SCENE_OPTIONS } from '../lib/audio'
 
 const TYPE_CONFIG = {
   location:    { badge: 'location',    bg: '#1a2040', color: '#6090e0', icon: '📍' },
