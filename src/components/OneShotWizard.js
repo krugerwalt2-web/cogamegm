@@ -32,7 +32,7 @@ const EXAMPLES = [
   'The party arrives at a village where everyone has fallen into an unnatural sleep',
 ]
 
-const SYSTEM_NAMES_LIST = ['D&D 5e', 'Pathfinder 2e', 'Daggerheart', 'Call of Cthulhu 7e', 'Shadowrun 6e', 'Custom / Homebrew']
+const SYSTEM_NAMES_LIST = ['D&D 5e', 'Pathfinder 2e', 'Daggerheart', 'Call of Cthulhu 7e', 'Shadowrun 6e', 'Marvel Multiverse RPG', 'Custom / Homebrew']
 
 export default function OneShotWizard({ onClose, onCreate }) {
   const [step, setStep] = useState(1)
