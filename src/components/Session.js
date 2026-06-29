@@ -15,7 +15,8 @@ const TYPE_CONFIG = {
 
 const s = {
   wrap: { position: 'relative' },
-  bg: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.15, pointerEvents: 'none' },
+  bg: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.35, pointerEvents: 'none' },
+  bgOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, background: 'linear-gradient(135deg, rgba(60,52,137,0.25) 0%, rgba(15,14,23,0.5) 100%)', pointerEvents: 'none' },
   z: { position: 'relative', zIndex: 1 },
   card: { background: 'rgba(26,24,48,0.96)', border: '1px solid #2d2a4a', borderRadius: 12, padding: '14px 16px', marginBottom: 10 },
   clabel: { fontSize: 11, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: '#6b6890', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 },
@@ -76,12 +77,17 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
   const [imgLoading, setImgLoading] = useState(false)
   const [generatedImage, setGeneratedImage] = useState(null)
   const [lastOut, setLastOut] = useState('')
+  const lastTypeRef = useRef('plot')
   const [isRec, setIsRec] = useState(false)
   const [localButtons, setLocalButtons] = useState([])
   const [addingBtn, setAddingBtn] = useState(false)
   const [newLabel, setNewLabel] = useState('')
   const [newText, setNewText] = useState('')
   const [activeAudio, setActiveAudio] = useState('none')
+  const [musicFile, setMusicFile] = useState(null)
+  const [musicPlaying, setMusicPlaying] = useState(false)
+  const audioElemRef = useRef(null)
+  const musicFileRef = useRef(null)
   const recogRef = useRef(null)
 
   // Load persisted buttons or generate world-aware defaults
@@ -99,6 +105,7 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
     const dtype = getDescriptionType(intent)
     setOutputMode(intent)
     setDescType(dtype)
+    lastTypeRef.current = dtype || intent
     setLoading(true)
     setGeneratedImage(null)
 
@@ -150,10 +157,35 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
 
   async function saveToMemory() {
     if (!lastOut) return
-    const tag = descType || 'plot'
-    // Save full description + image URL so it can be recalled with image later
+    const tag = lastTypeRef.current || descType || 'plot'
     const imageRef = generatedImage ? ' [IMAGE:' + generatedImage + ']' : ''
     await onAddMemory(tag, lastOut + imageRef)
+  }
+
+  function handleMusicFile(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    const url = URL.createObjectURL(file)
+    setMusicFile({ name: file.name, url })
+    setMusicPlaying(false)
+    if (audioElemRef.current) {
+      audioElemRef.current.src = url
+      audioElemRef.current.loop = true
+    }
+  }
+
+  function toggleMusic() {
+    if (!audioElemRef.current || !musicFile) return
+    if (musicPlaying) {
+      audioElemRef.current.pause()
+      setMusicPlaying(false)
+    } else {
+      audioElemRef.current.src = musicFile.url
+      audioElemRef.current.loop = true
+      audioElemRef.current.volume = 0.4
+      audioElemRef.current.play().catch(() => {})
+      setMusicPlaying(true)
+    }
   }
 
   function toggleVoice() {
@@ -210,7 +242,10 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
   return (
     <div style={s.wrap}>
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
-      {campaign.bg_image_url && <div style={{ ...s.bg, backgroundImage: 'url(' + campaign.bg_image_url + ')' }} />}
+      {campaign.bg_image_url && <>
+        <div style={{ ...s.bg, backgroundImage: 'url(' + campaign.bg_image_url + ')' }} />
+        <div style={s.bgOverlay} />
+      </>}
       <div style={s.z}>
 
         {/* Output card */}
@@ -281,6 +316,18 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
               <button key={opt.id} style={activeAudio === opt.id ? s.audioBtnOn : s.audioBtn}
                 onClick={() => handleAudio(opt.id)}>{opt.label}</button>
             ))}
+          </div>
+          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <button style={s.audioBtn} onClick={() => musicFileRef.current.click()}>
+              📂 {musicFile ? musicFile.name.slice(0, 20) + (musicFile.name.length > 20 ? '...' : '') : 'Load music file'}
+            </button>
+            {musicFile && (
+              <button style={musicPlaying ? s.audioBtnOn : s.audioBtn} onClick={toggleMusic}>
+                {musicPlaying ? '⏸ Pause' : '▶ Play'} music
+              </button>
+            )}
+            <input ref={musicFileRef} type="file" accept="audio/*" style={{ display: 'none' }} onChange={handleMusicFile} />
+            <audio ref={audioElemRef} style={{ display: 'none' }} />
           </div>
         </div>
 
