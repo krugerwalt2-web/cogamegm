@@ -75,20 +75,22 @@ export function buildSystemPrompt(intent, campaign, memory, sceneNPCs) {
 
   const base = 'Campaign: "' + campaign.name + '"\nSystem: ' + campaign.system + '\nWorld lore & tone: ' + campaign.lore
 
+  const WORD_LIMIT = 'STRICT LIMIT: Maximum 60 words. One short paragraph only. Do not exceed this under any circumstances.'
+
   const prompts = {
-    location: `You are an atmospheric narrator for a tabletop RPG. Write exactly ONE paragraph describing this location. Focus on: unique world lore elements, the environment, and what creatures/NPCs/challenges this place might hold. Make it vivid and read-aloud ready. The GM will read this directly to players. End with a sensory detail that draws players in.\n\n${base}${memCtx}${npcCtx}`,
+    location: `You are an atmospheric narrator for a tabletop RPG. Write ONE short paragraph (max 60 words) describing this location. Focus on unique world lore, the environment, and what dangers or wonders it holds. End with one vivid sensory detail. The GM reads this aloud directly to players.\n\n${WORD_LIMIT}\n\n${base}${memCtx}${npcCtx}`,
 
-    creature: `You are an atmospheric narrator for a tabletop RPG. Write exactly ONE paragraph describing this creature. Focus on: unique world lore, tense menacing presence, how it moves and feels in the space. If this creature can speak according to the lore and world setting, end with a short phrase it says directly to the players (in quotes). Make it vivid and read-aloud ready.\n\n${base}${memCtx}${npcCtx}`,
+    creature: `You are an atmospheric narrator for a tabletop RPG. Write ONE short paragraph (max 60 words) describing this creature. Focus on its menacing presence, movement, and world lore origin. If it can speak per the lore, end with a short threatening phrase in quotes directed at the players.\n\n${WORD_LIMIT}\n\n${base}${memCtx}${npcCtx}`,
 
-    npc: `You are an atmospheric narrator for a tabletop RPG. Write exactly ONE paragraph describing this NPC. Include: a name that fits the world, their race, a random tone (aggressive/helpful/cheery/preoccupied/suspicious), and their role. Focus on world lore tone and build social tension — this interaction could be resolved through roleplay or turn to combat. End with a phrase this NPC says directly to the players (in quotes). Make it vivid and read-aloud ready.\n\n${base}${memCtx}${npcCtx}`,
+    npc: `You are an atmospheric narrator for a tabletop RPG. Write ONE short paragraph (max 60 words) describing this NPC. Include their name, race, tone (aggressive/helpful/cheery/preoccupied/suspicious), and role. Build social tension. End with a phrase they say directly to the players in quotes.\n\n${WORD_LIMIT}\n\n${base}${memCtx}${npcCtx}`,
 
-    environment: `You are an atmospheric narrator for a tabletop RPG. Write exactly ONE paragraph describing the environmental challenge or atmosphere of this scene. Include a specific environmental element that brings the location to life: a trap, darkness, flooding, fire, rain, wind, earthquake, fog, extreme cold/heat, or similar. Make it a challenge or tension the party must contend with. Make it vivid and read-aloud ready.\n\n${base}${memCtx}${npcCtx}`,
+    environment: `You are an atmospheric narrator for a tabletop RPG. Write ONE short paragraph (max 60 words) describing the environmental challenge in this scene. Pick one specific hazard: trap, darkness, flooding, fire, rain, wind, fog, extreme temperature. Make it feel immediate and threatening.\n\n${WORD_LIMIT}\n\n${base}${memCtx}${npcCtx}`,
 
-    rules: `You are a precise rules reference for a tabletop RPG. Answer the GM's rules question in 2-4 sentences. Be specific and cite mechanics. If unsure, say so clearly.\n\n${base}${rulesCtx}${customRules}${memCtx}`,
+    rules: `You are a precise rules reference for a tabletop RPG. Answer in 2-3 sentences maximum. Be specific and cite mechanics. If unsure, say so.\n\n${base}${rulesCtx}${customRules}${memCtx}`,
 
     note: `Extract the key fact. Return ONLY valid JSON: {"tag":"npc"|"location"|"creature"|"environment"|"plot"|"rule","text":"fact in under 12 words"}. No markdown, no extra text.`,
 
-    image: `You are a visual prompt writer for AI image generation. Convert the GM's request into a vivid 1-2 sentence visual description for a fantasy art image generator. Be specific: appearance, lighting, mood, composition. Never ask for clarification — use the campaign lore to fill any gaps. Output ONLY the visual description, nothing else.\n\n${base}${memCtx}`,
+    image: `You are a visual prompt writer for AI image generation. Write 1-2 sentences describing a fantasy art scene. Be specific: appearance, lighting, mood, composition. Never ask for clarification — use campaign lore to fill gaps. Output ONLY the visual description.\n\n${base}${memCtx}`,
 
     oneshot: `You are a tabletop RPG adventure designer. The GM gives you a one-sentence concept. Generate a complete one-shot scene brief in this exact JSON format (no markdown, no extra text):
 {"title":"scene title","setting":"2-3 sentence location description","tone":"the emotional/atmospheric tone in 5-10 words","hook":"the inciting event or situation the party finds themselves in","complication":"an unexpected twist or challenge that arises mid-scene","npcs":[{"name":"NPC name","role":"their role","motivation":"what they want","tone":"aggressive|helpful|suspicious|mysterious|desperate"}],"environment":"one environmental challenge or hazard","goal":"what the party needs to achieve to succeed","system_note":"one key rule from the system most relevant to this scene"}
