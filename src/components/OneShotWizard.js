@@ -62,14 +62,25 @@ export default function OneShotWizard({ onClose, onCreate }) {
 
   function handleCreate() {
     if (!result) return
+    const builtLore = (lore ? lore + '\n\n' : '')
+      + 'Setting: ' + result.setting
+      + '\nTone: ' + result.tone
+      + '\nHook: ' + result.hook
+      + '\nComplication: ' + result.complication
+      + '\nGoal: ' + result.goal
     onCreate({
       name: result.title,
       system,
-      lore: lore + '\n\nScene: ' + result.setting + '\nTone: ' + result.tone + '\nHook: ' + result.hook + '\nComplication: ' + result.complication + '\nGoal: ' + result.goal,
+      lore: builtLore,
       rules_reference: result.system_note || '',
       bg_image_url: '',
       scene_npcs: result.npcs || [],
       scene_environment: result.environment || '',
+      // Pass raw result fields for rich memory saving
+      scene_hook: result.hook || '',
+      scene_goal: result.goal || '',
+      scene_complication: result.complication || '',
+      scene_tone: result.tone || '',
     })
   }
 
