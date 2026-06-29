@@ -61,8 +61,24 @@ export default function Dashboard({ session }) {
     if (error) throw new Error(error.message)
     if (data) {
       setCampaigns(prev => [data, ...prev])
-      setActiveCampaign({ ...data, scene_npcs: sceneData?.scene_npcs || [] })
+      const npcs = sceneData?.scene_npcs || []
+      setActiveCampaign({ ...data, scene_npcs: npcs })
       setTab('session')
+      // Auto-save one shot overview and NPCs to memory
+      if (sceneData?.scene_npcs?.length) {
+        const memEntries = [
+          { campaign_id: data.id, user_id: session.user.id, tag: 'plot', text: 'Scene: ' + name + ' — ' + (sceneData.lore || '').replace(/\n/g, ' ').slice(0, 150) },
+          ...sceneData.scene_npcs.map(npc => ({
+            campaign_id: data.id, user_id: session.user.id, tag: 'npc',
+            text: npc.name + ' — ' + npc.role + ', ' + npc.tone + '. Wants: ' + npc.motivation
+          })),
+        ]
+        if (sceneData.scene_environment) {
+          memEntries.push({ campaign_id: data.id, user_id: session.user.id, tag: 'environment', text: sceneData.scene_environment.slice(0, 120) })
+        }
+        await supabase.from('memories').insert(memEntries)
+        setMemory(memEntries.map((m, i) => ({ ...m, id: 'temp_' + i, created_at: new Date().toISOString() })))
+      }
     }
   }
 
@@ -72,6 +88,18 @@ export default function Dashboard({ session }) {
     if (data) {
       setCampaigns(prev => prev.map(c => c.id === id ? data : c))
       if (activeCampaign?.id === id) setActiveCampaign(data)
+    }
+  }
+
+  async function deleteCampaign(id) {
+    await supabase.from('memories').delete().eq('campaign_id', id)
+    await supabase.from('campaign_buttons').delete().eq('campaign_id', id)
+    await supabase.from('campaigns').delete().eq('id', id)
+    setCampaigns(prev => prev.filter(c => c.id !== id))
+    if (activeCampaign?.id === id) {
+      setActiveCampaign(null)
+      setMemory([])
+      setButtons([])
     }
   }
 
@@ -106,6 +134,7 @@ export default function Dashboard({ session }) {
   async function handleOneShotCreate(sceneData) {
     setShowOneShot(false)
     await createCampaign(sceneData.name, sceneData.system || 'D&D 5e', sceneData.lore, sceneData.rules_reference, '', sceneData)
+
   }
 
   return (
@@ -132,7 +161,7 @@ export default function Dashboard({ session }) {
       </div>
 
       {tab === 'session' && <Session campaign={activeCampaign} memory={memory} onAddMemory={addMemory} onGoToCampaigns={() => setTab('campaigns')} buttons={buttons} onSaveButtons={saveButtons} />}
-      {tab === 'campaigns' && <Campaigns campaigns={campaigns} activeCampaign={activeCampaign} onSelect={selectCampaign} onCreate={createCampaign} onUpdate={updateCampaign} />}
+      {tab === 'campaigns' && <Campaigns campaigns={campaigns} activeCampaign={activeCampaign} onSelect={selectCampaign} onCreate={createCampaign} onUpdate={updateCampaign} onDelete={deleteCampaign} />}
       {tab === 'memory' && <Memory campaign={activeCampaign} memory={memory} onDelete={deleteMemory} />}
     </div>
   )
