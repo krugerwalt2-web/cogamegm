@@ -21,8 +21,8 @@ export default function App() {
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 32, marginBottom: 12 }}>🎲</div>
-        <div style={{ color: '#a49fc8' }}>Loading Co-Game GM…</div>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>🎲</div>
+        <div style={{ color: '#a49fc8' }}>Loading Co-Game GM...</div>
       </div>
     </div>
   )
