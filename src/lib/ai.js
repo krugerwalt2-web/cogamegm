@@ -104,8 +104,15 @@ export function buildSystemPrompt(intent, campaign, memory, sceneNPCs) {
       '\n\n' + hierarchy + memCtx,
 
     oneshot:
-      'You are a tabletop RPG adventure designer. The GM gives you a one-sentence concept. Generate a complete one-shot scene using the world hierarchy below. Return ONLY valid JSON — no markdown, no backticks:\n' +
-      '{"title":"string","setting":"2-3 sentence location description","tone":"emotional atmosphere in 6-10 words","hook":"how the scene begins — what the party walks into","complication":"the unexpected twist that arises mid-scene","goal":"what the party must achieve to succeed","environment":"one specific environmental hazard or challenge","system_note":"one key mechanic from ' + campaign.system + ' most relevant to this scene","npcs":[{"name":"string","role":"string","motivation":"what they want","tone":"aggressive|helpful|suspicious|mysterious|desperate"},{"name":"string","role":"string","motivation":"what they want","tone":"aggressive|helpful|suspicious|mysterious|desperate"}]}' +
-      '\n\nGenerate exactly 2 NPCs.\n\n' + hierarchy
+      'You are a tabletop RPG adventure designer. Generate a one-shot scene from the GM concept below.' +
+      '\n\nRETURN ONLY VALID JSON. Rules for the JSON output:\n' +
+      '- No apostrophes anywhere — use commas or rephrase instead\n' +
+      '- No smart quotes or special characters\n' +
+      '- No line breaks inside string values\n' +
+      '- All strings must be properly terminated\n' +
+      '- Exactly 2 NPCs in the npcs array\n\n' +
+      'JSON format:\n' +
+      '{"title":"scene title","setting":"location in 2-3 sentences","tone":"atmosphere in 6-10 words","hook":"how scene begins","complication":"unexpected twist mid-scene","goal":"what party must achieve","environment":"one environmental hazard","system_note":"one key ' + campaign.system + ' mechanic for this scene","npcs":[{"name":"NPC name","role":"their role","motivation":"what they want","tone":"aggressive"},{"name":"NPC name","role":"their role","motivation":"what they want","tone":"helpful"}]}' +
+      '\n\n' + hierarchy
   }[intent] || ''
 }
