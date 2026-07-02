@@ -55,9 +55,63 @@ export default function OneShotWizard({ onClose, onCreate }) {
         rules_reference: ''
       }
       const reply = await askAI(buildSystemPrompt('oneshot', mockCampaign, [], []), concept)
-      const clean = reply.replace(/```[a-z]*\n?|```/g, '').trim()
-      const parsed = JSON.parse(clean)
-      setResult(parsed)
+
+      // Clean and sanitize the response before parsing
+      let clean = reply
+        .replace(/```[a-z]*\n?|```/g, '')  // remove markdown code fences
+        .trim()
+
+      // Extract just the JSON object if there's extra text around it
+      const jsonStart = clean.indexOf('{')
+      const jsonEnd = clean.lastIndexOf('}')
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        clean = clean.slice(jsonStart, jsonEnd + 1)
+      }
+
+      // Fix common JSON issues from AI output:
+      // 1. Remove control characters that break JSON
+      clean = clean.replace(/[\x00-\x1F\x7F]/g, ' ')
+      // 2. Fix unescaped quotes inside string values (best effort)
+      // Replace smart/curly quotes with straight quotes
+      clean = clean.replace(/[\u201C\u201D]/g, '\"')
+      clean = clean.replace(/[\u2018\u2019]/g, "\'")
+
+      let parsed
+      try {
+        parsed = JSON.parse(clean)
+      } catch (jsonErr) {
+        // If still failing, try a more aggressive fix: 
+        // truncate at the last valid closing brace
+        console.error('JSON parse error:', jsonErr.message)
+        console.error('Attempted JSON:', clean.slice(0, 200))
+        // Try to fix by re-requesting with stricter prompt
+        const retryReply = await askAI(
+          buildSystemPrompt('oneshot', mockCampaign, [], []) +
+          '\n\nCRITICAL: Your previous response had invalid JSON. Return ONLY the JSON object. No apostrophes in text — use commas instead. No special characters.',
+          concept
+        )
+        const retryClean = retryReply
+          .replace(/```[a-z]*\n?|```/g, '').trim()
+          .replace(/[\x00-\x1F\x7F]/g, ' ')
+        const rs = retryClean.indexOf('{')
+        const re = retryClean.lastIndexOf('}')
+        parsed = JSON.parse(retryClean.slice(rs, re + 1))
+      }
+
+      // Ensure all required fields exist
+      const result = {
+        title: parsed.title || concept.slice(0, 50),
+        setting: parsed.setting || '',
+        tone: parsed.tone || '',
+        hook: parsed.hook || '',
+        complication: parsed.complication || '',
+        goal: parsed.goal || '',
+        environment: parsed.environment || '',
+        system_note: parsed.system_note || '',
+        npcs: Array.isArray(parsed.npcs) ? parsed.npcs.slice(0, 2) : []
+      }
+
+      setResult(result)
       setStep(2)
     } catch (e) {
       setError('Generation failed — try rephrasing your concept. (' + e.message + ')')
