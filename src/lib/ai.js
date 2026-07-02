@@ -1,12 +1,10 @@
 import { SYSTEM_PACKS } from './systems'
 
 const ANTHROPIC_KEY = process.env.REACT_APP_ANTHROPIC_API_KEY
-const FAL_KEY = process.env.REACT_APP_FAL_API_KEY
 
-// ─── Text Generation ────────────────────────────────────────────────────────
-
+// ── Text generation ──────────────────────────────────────────────────────────
 export async function askAI(systemPrompt, userMessage) {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -16,86 +14,98 @@ export async function askAI(systemPrompt, userMessage) {
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1000,
+      max_tokens: 500,
       system: systemPrompt,
       messages: [{ role: 'user', content: userMessage }]
     })
   })
-  const data = await response.json()
+  const data = await res.json()
   if (data.error) throw new Error(data.error.message)
   return data.content.map(b => b.text || '').join('')
 }
 
-// ─── Image Generation (Pollinations.AI — free, no key needed) ───────────────
-
-export async function generateImage(prompt, campaignLore) {
+// ── Image generation (Pollinations.AI — free, no key) ───────────────────────
+export async function generateImage(prompt, lore) {
   const style = 'fantasy tabletop RPG art, detailed illustration, dramatic lighting, epic composition'
-  const full = (style + ', ' + prompt + ', ' + (campaignLore || ''))
-    .replace(/[^\w\s,.-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 250)
-  const url = 'https://image.pollinations.ai/prompt/' + encodeURIComponent(full) +
+  const full = (style + ', ' + prompt + (lore ? ', ' + lore.slice(0, 100) : ''))
+    .replace(/[^\w\s,.-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300)
+  return 'https://image.pollinations.ai/prompt/' + encodeURIComponent(full) +
     '?width=768&height=512&nologo=true&seed=' + Math.floor(Math.random() * 99999)
-  return url
 }
 
-// ─── Intent Detection ────────────────────────────────────────────────────────
-
+// ── Intent detection ─────────────────────────────────────────────────────────
 export function detectIntent(text) {
   const t = text.toLowerCase()
-  // Image
-  if (t.match(/\bshow (me|image|picture|visual)\b|\bdraw\b|\bimage of\b|\bpicture of\b|\bgenerate (an? )?(image|picture)\b/)) return 'image'
-  // Rules
+  if (t.match(/\bshow (me|image|picture)\b|\bdraw\b|\bimage of\b|\bpicture of\b|\bgenerate (an? )?(image|picture)\b/)) return 'image'
   if (t.match(/\bwhat rule\b|\brule for\b|\bhow does .+ work\b|\bruling\b|\bcan (i|a player)\b|\bdc for\b/)) return 'rules'
-  // Note
   if (t.match(/\bnote that\b|\bremember\b|\bmark down\b|\badd a note\b/)) return 'note'
-  // Description types — auto detect from keywords
-  if (t.match(/\bcreature\b|\bmonster\b|\bbeast\b|\bfiend\b|\bdragon\b|\bundead\b|\bgolem\b|\bwarforged\b|\bdemon\b|\bspider\b|\bwolf\b|\bgoblin\b|\borc\b|\btroll\b|\bgiant\b/)) return 'creature'
-  if (t.match(/\bnpc\b|\binnkeeper\b|\bmerchant\b|\bguard\b|\bwizard\b|\bpriest\b|\bthief\b|\bwarrior\b|\bknight\b|\belf\b|\bdwarf\b|\bhuman\b|\bhalfling\b|\bstranger\b|\bfigure\b|\bperson\b|\bwoman\b|\bman\b|\bcharacter\b/)) return 'npc'
-  if (t.match(/\benvironment\b|\bweather\b|\btrap\b|\bdarkness\b|\bflood\b|\bfire\b|\brain\b|\bwind\b|\bquake\b|\bfog\b|\bsmoke\b|\bchallenge\b|\bhazard\b/)) return 'environment'
-  // Default: location describe
+  if (t.match(/\bcreature\b|\bmonster\b|\bbeast\b|\bfiend\b|\bdragon\b|\bundead\b|\bgolem\b|\bwarforged\b|\bdemon\b|\bgoblin\b|\borc\b|\btroll\b|\bgiant\b|\bvampire\b|\bzombie\b|\bguardian\b|\bsentry\b/)) return 'creature'
+  if (t.match(/\bnpc\b|\binnkeeper\b|\bmerchant\b|\bguard\b|\bwizard\b|\bpriest\b|\bwarrior\b|\bknight\b|\bstranger\b|\bperson\b|\bwoman\b|\bman\b|\bcharacter\b|\bhero\b|\bvillain\b|\bsoldier\b/)) return 'npc'
+  if (t.match(/\benvironment\b|\bweather\b|\btrap\b|\bdarkness\b|\bflood\b|\bfire\b|\brain\b|\bwind\b|\bfog\b|\bsmoke\b|\bhazard\b|\bchallenge\b|\bterrain\b/)) return 'environment'
+  if (t.match(/\bitem\b|\bartifact\b|\bweapon\b|\barmor\b|\barmour\b|\bsword\b|\bstaff\b|\bamulet\b|\bscroll\b|\bpotion\b|\bgem\b|\brelic\b/)) return 'item'
   return 'location'
 }
 
-export function getDescriptionType(intent) {
-  const map = { location: 'location', creature: 'creature', npc: 'npc', environment: 'environment' }
-  return map[intent] || 'location'
-}
-
-// ─── System Prompts ──────────────────────────────────────────────────────────
-
+// ── System prompts — built around the 8-level hierarchy ─────────────────────
 export function buildSystemPrompt(intent, campaign, memory, sceneNPCs) {
-  const systemPack = SYSTEM_PACKS[campaign.system]
-  const rulesCtx = systemPack?.rules ? '\n\nSystem rules:\n' + systemPack.rules : ''
-  const customRules = campaign.rules_reference ? '\n\nCustom rules:\n' + campaign.rules_reference : ''
+  const pack = SYSTEM_PACKS[campaign.system]
+  const rulesCtx = pack?.rules ? '\n\nSystem rules (' + campaign.system + '):\n' + pack.rules : ''
+  const customRules = campaign.rules_reference ? '\n\nCustom rules & house rules:\n' + campaign.rules_reference : ''
   const memCtx = memory?.length
-    ? '\n\nSession memory:\n' + memory.map(m => '[' + m.tag.toUpperCase() + '] ' + m.text).join('\n')
+    ? '\n\nSession memory (established facts — never contradict these):\n' +
+      memory.map(m => {
+        const text = m.text.replace(/\s*\[IMAGE:[^\]]+\]/, '').trim()
+        return '[' + m.tag.toUpperCase() + '] ' + text
+      }).join('\n')
     : ''
   const npcCtx = sceneNPCs?.length
-    ? '\n\nNPCs present in this scene:\n' + sceneNPCs.map(n => '- ' + n.name + ': ' + n.description).join('\n')
+    ? '\n\nNPCs present in this scene:\n' +
+      sceneNPCs.map(n => '- ' + n.name + ' (' + n.role + ', ' + n.tone + '): wants ' + n.motivation).join('\n')
     : ''
 
-  const base = 'Campaign: "' + campaign.name + '"\nSystem: ' + campaign.system + '\nWorld lore & tone: ' + campaign.lore
+  // Full hierarchy context
+  const hierarchy =
+    'Game system: ' + campaign.system + '\n' +
+    'Campaign: ' + campaign.name + '\n' +
+    'World lore & setting: ' + (campaign.lore || '') + '\n'
 
-  const WORD_LIMIT = 'STRICT LIMIT: Maximum 60 words. One short paragraph only. Do not exceed this under any circumstances.'
+  const LIMIT = '\n\nSTRICT OUTPUT RULE: Write exactly ONE paragraph. Maximum 60 words. No headers, no lists. The GM reads this aloud directly to players at the table.'
 
-  const prompts = {
-    location: `You are an atmospheric narrator for a tabletop RPG. Write ONE short paragraph (max 60 words) describing this location. Focus on unique world lore, the environment, and what dangers or wonders it holds. End with one vivid sensory detail. The GM reads this aloud directly to players.\n\n${WORD_LIMIT}\n\n${base}${memCtx}${npcCtx}`,
+  return {
+    location:
+      'You are an atmospheric narrator for a tabletop RPG session. Describe this location in one vivid paragraph (max 60 words). Focus on: world lore details unique to this setting, the physical environment, and one sensory detail that draws players in. Hint at what dangers or wonders this place holds.' +
+      LIMIT + '\n\n' + hierarchy + memCtx + npcCtx,
 
-    creature: `You are an atmospheric narrator for a tabletop RPG. Write ONE short paragraph (max 60 words) describing this creature. Focus on its menacing presence, movement, and world lore origin. If it can speak per the lore, end with a short threatening phrase in quotes directed at the players.\n\n${WORD_LIMIT}\n\n${base}${memCtx}${npcCtx}`,
+    creature:
+      'You are an atmospheric narrator for a tabletop RPG session. Describe this creature in one menacing paragraph (max 60 words). Focus on: its world lore origin, its physical presence and how it moves, and the threat it represents. If this creature can speak according to the lore and setting, end with a short phrase it says directly to the players in quotes.' +
+      LIMIT + '\n\n' + hierarchy + memCtx + npcCtx,
 
-    npc: `You are an atmospheric narrator for a tabletop RPG. Write ONE short paragraph (max 60 words) describing this NPC. Include their name, race, tone (aggressive/helpful/cheery/preoccupied/suspicious), and role. Build social tension. End with a phrase they say directly to the players in quotes.\n\n${WORD_LIMIT}\n\n${base}${memCtx}${npcCtx}`,
+    npc:
+      'You are an atmospheric narrator for a tabletop RPG session. Describe this NPC in one paragraph (max 60 words). Include: a name fitting the world, their race, a clear tone (aggressive/helpful/cheery/preoccupied/suspicious/desperate), and their role. Build social tension — this encounter could go either way. End with a phrase this NPC says directly to the players in quotes.' +
+      LIMIT + '\n\n' + hierarchy + memCtx + npcCtx,
 
-    environment: `You are an atmospheric narrator for a tabletop RPG. Write ONE short paragraph (max 60 words) describing the environmental challenge in this scene. Pick one specific hazard: trap, darkness, flooding, fire, rain, wind, fog, extreme temperature. Make it feel immediate and threatening.\n\n${WORD_LIMIT}\n\n${base}${memCtx}${npcCtx}`,
+    environment:
+      'You are an atmospheric narrator for a tabletop RPG session. Describe the environmental challenge in one paragraph (max 60 words). Choose one specific hazard active right now: a trap, flooding, fire, darkness, rain, wind, earthquake, fog, poison gas, extreme cold or heat. Make it feel immediate and urgent — the party must deal with this.' +
+      LIMIT + '\n\n' + hierarchy + memCtx + npcCtx,
 
-    rules: `You are a precise rules reference for a tabletop RPG. Answer in 2-3 sentences maximum. Be specific and cite mechanics. If unsure, say so.\n\n${base}${rulesCtx}${customRules}${memCtx}`,
+    item:
+      'You are an atmospheric narrator for a tabletop RPG session. Describe this item or artifact in one paragraph (max 60 words). Focus on: its appearance, how it feels in hand, and a hint of its power or history within the world lore. Make it feel significant and worth remembering.' +
+      LIMIT + '\n\n' + hierarchy + memCtx + npcCtx,
 
-    note: `Extract the key fact. Return ONLY valid JSON: {"tag":"npc"|"location"|"creature"|"environment"|"plot"|"rule","text":"fact in under 12 words"}. No markdown, no extra text.`,
+    rules:
+      'You are a precise rules reference for ' + campaign.system + '. Answer the GM\'s rules question in 2-3 sentences. Be specific — cite the mechanic, the dice, the DC or difficulty. If you are unsure, say so clearly rather than guessing.' +
+      '\n\n' + hierarchy + rulesCtx + customRules + memCtx,
 
-    image: `You are a visual prompt writer for AI image generation. Write 1-2 sentences describing a fantasy art scene. Be specific: appearance, lighting, mood, composition. Never ask for clarification — use campaign lore to fill gaps. Output ONLY the visual description.\n\n${base}${memCtx}`,
+    note:
+      'Extract the key fact from the GM\'s note and classify it. Return ONLY valid JSON, no markdown, no backticks:\n{"tag":"npc"|"creature"|"location"|"environment"|"item"|"plot"|"rule","text":"the key fact in under 15 words"}\n\nClassification guide:\n- npc: a named person, villain, hero, ally, enemy\n- creature: a monster, beast, alien, supernatural being\n- location: a place, room, building, city, region, dungeon\n- environment: a hazard, weather, trap, obstacle, condition\n- item: an object, weapon, artifact, gear, canister, device, tool, relic\n- plot: an event, decision, revelation, story beat\n- rule: a game mechanic or ruling\n\nWhen in doubt between location and item: if it is an OBJECT the party can pick up or interact with, it is item. If it is a PLACE, it is location.',
 
-    oneshot: `You are a tabletop RPG adventure designer. The GM gives you a one-sentence concept. Generate a complete one-shot scene brief in this exact JSON format (no markdown, no extra text):
-{"title":"scene title","setting":"2-3 sentence location description","tone":"the emotional/atmospheric tone in 5-10 words","hook":"the inciting event or situation the party finds themselves in","complication":"an unexpected twist or challenge that arises mid-scene","npcs":[{"name":"NPC name","role":"their role","motivation":"what they want","tone":"aggressive|helpful|suspicious|mysterious|desperate"}],"environment":"one environmental challenge or hazard","goal":"what the party needs to achieve to succeed","system_note":"one key rule from the system most relevant to this scene"}
-Generate exactly 2 NPCs. System: ${campaign.system}. World lore: ${campaign.lore}`
-  }
+    image:
+      'You are a visual prompt writer for AI image generation. Convert the GM\'s request into a vivid 1-2 sentence description for a fantasy art generator. Be specific about: visual appearance, lighting, mood, and composition. Never ask for clarification — use the world lore to fill any gaps. Output ONLY the visual description, nothing else.' +
+      '\n\n' + hierarchy + memCtx,
 
-  return prompts[intent] || prompts.location
+    oneshot:
+      'You are a tabletop RPG adventure designer. The GM gives you a one-sentence concept. Generate a complete one-shot scene using the world hierarchy below. Return ONLY valid JSON — no markdown, no backticks:\n' +
+      '{"title":"string","setting":"2-3 sentence location description","tone":"emotional atmosphere in 6-10 words","hook":"how the scene begins — what the party walks into","complication":"the unexpected twist that arises mid-scene","goal":"what the party must achieve to succeed","environment":"one specific environmental hazard or challenge","system_note":"one key mechanic from ' + campaign.system + ' most relevant to this scene","npcs":[{"name":"string","role":"string","motivation":"what they want","tone":"aggressive|helpful|suspicious|mysterious|desperate"},{"name":"string","role":"string","motivation":"what they want","tone":"aggressive|helpful|suspicious|mysterious|desperate"}]}' +
+      '\n\nGenerate exactly 2 NPCs.\n\n' + hierarchy
+  }[intent] || ''
 }
