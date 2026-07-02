@@ -1,28 +1,7 @@
 import React, { useState } from 'react'
 import { askAI, buildSystemPrompt } from '../lib/ai'
 
-const s = {
-  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 },
-  modal: { background: '#1a1830', border: '1px solid #2d2a4a', borderRadius: 16, padding: '24px', width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto' },
-  title: { fontSize: 18, fontWeight: 600, color: '#fffffe', marginBottom: 4 },
-  sub: { fontSize: 13, color: '#a49fc8', marginBottom: 20 },
-  label: { fontSize: 13, color: '#a49fc8', marginBottom: 6, display: 'block' },
-  input: { width: '100%', padding: '9px 12px', background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 8, color: '#fffffe', fontSize: 13, marginBottom: 12, outline: 'none', fontFamily: 'inherit' },
-  select: { width: '100%', padding: '9px 12px', background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 8, color: '#fffffe', fontSize: 13, marginBottom: 12, outline: 'none', fontFamily: 'inherit' },
-  textarea: { width: '100%', padding: '9px 12px', background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 8, color: '#fffffe', fontSize: 13, marginBottom: 12, outline: 'none', resize: 'vertical', minHeight: 60, fontFamily: 'inherit' },
-  row: { display: 'flex', gap: 8 },
-  btn: { flex: 1, padding: '10px', background: '#3C3489', color: '#EEEDFE', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' },
-  cancel: { flex: 1, padding: '10px', background: 'transparent', border: '1px solid #2d2a4a', borderRadius: 8, fontSize: 13, color: '#a49fc8', cursor: 'pointer' },
-  result: { background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 10, padding: 14, marginBottom: 12 },
-  rLabel: { fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6b6890', marginBottom: 6 },
-  rValue: { fontSize: 13, color: '#fffffe', lineHeight: 1.6 },
-  npcCard: { background: '#1e1a40', border: '1px solid #2d2a4a', borderRadius: 8, padding: 10, marginBottom: 6 },
-  npcName: { fontSize: 13, fontWeight: 600, color: '#b4aef5' },
-  npcSub: { fontSize: 12, color: '#a49fc8', marginTop: 2 },
-  spin: { display: 'inline-block', width: 14, height: 14, border: '2px solid #3C3489', borderTopColor: '#b4aef5', borderRadius: '50%', animation: 'spin .7s linear infinite', marginRight: 8 },
-  examples: { display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 },
-  eg: { fontSize: 12, padding: '4px 10px', border: '1px solid #2d2a4a', borderRadius: 6, color: '#a49fc8', cursor: 'pointer', background: '#0f0e17' },
-}
+const SYSTEMS = ['D&D 5e', 'Pathfinder 2e', 'Daggerheart', 'Call of Cthulhu 7e', 'Shadowrun 6e', 'Marvel Multiverse RPG', 'Custom / Homebrew']
 
 const EXAMPLES = [
   'A tense negotiation in a flooded dwarven hall with a betrayal twist',
@@ -32,7 +11,29 @@ const EXAMPLES = [
   'The party arrives at a village where everyone has fallen into an unnatural sleep',
 ]
 
-const SYSTEM_NAMES_LIST = ['D&D 5e', 'Pathfinder 2e', 'Daggerheart', 'Call of Cthulhu 7e', 'Shadowrun 6e', 'Marvel Multiverse RPG', 'Custom / Homebrew']
+const s = {
+  overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.75)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 },
+  modal: { background: '#1a1830', border: '1px solid #2d2a4a', borderRadius: 16, padding: 24, width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto' },
+  title: { fontSize: 18, fontWeight: 600, color: '#fffffe', marginBottom: 4 },
+  sub: { fontSize: 13, color: '#a49fc8', marginBottom: 20 },
+  label: { fontSize: 13, color: '#a49fc8', marginBottom: 6, display: 'block', marginTop: 8 },
+  input: { width: '100%', padding: '9px 12px', background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 8, color: '#fffffe', fontSize: 13, outline: 'none', fontFamily: 'inherit' },
+  select: { width: '100%', padding: '9px 12px', background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 8, color: '#fffffe', fontSize: 13, outline: 'none', fontFamily: 'inherit', marginBottom: 4 },
+  textarea: { width: '100%', padding: '9px 12px', background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 8, color: '#fffffe', fontSize: 13, outline: 'none', resize: 'vertical', minHeight: 70, fontFamily: 'inherit' },
+  examples: { display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10, marginTop: 6 },
+  eg: { fontSize: 11, padding: '4px 10px', border: '1px solid #2d2a4a', borderRadius: 6, color: '#a49fc8', cursor: 'pointer', background: '#0f0e17' },
+  row: { display: 'flex', gap: 8, marginTop: 14 },
+  btn: { flex: 1, padding: 10, background: '#3C3489', color: '#EEEDFE', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' },
+  cancel: { flex: 1, padding: 10, background: 'transparent', border: '1px solid #2d2a4a', borderRadius: 8, fontSize: 13, color: '#a49fc8', cursor: 'pointer' },
+  result: { background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 10, padding: 12, marginBottom: 8 },
+  rlabel: { fontSize: 10, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#6b6890', marginBottom: 5 },
+  rtext: { fontSize: 13, color: '#fffffe', lineHeight: 1.6 },
+  npc: { background: '#1e1a40', border: '1px solid #2d2a4a', borderRadius: 8, padding: 10, marginBottom: 6 },
+  npcName: { fontSize: 13, fontWeight: 600, color: '#b4aef5' },
+  npcSub: { fontSize: 12, color: '#a49fc8', marginTop: 2 },
+  error: { color: '#ff8080', fontSize: 13, marginBottom: 10 },
+  spin: { display: 'inline-block', width: 13, height: 13, border: '2px solid #3C3489', borderTopColor: '#b4aef5', borderRadius: '50%', animation: 'spin .7s linear infinite', marginRight: 8 },
+}
 
 export default function OneShotWizard({ onClose, onCreate }) {
   const [step, setStep] = useState(1)
@@ -47,40 +48,49 @@ export default function OneShotWizard({ onClose, onCreate }) {
     if (!concept.trim()) return
     setLoading(true); setError('')
     try {
-      const mockCampaign = { name: 'One Shot', system, lore: lore || 'A classic fantasy world.', rules_reference: '' }
-      const prompt = buildSystemPrompt('oneshot', mockCampaign, [], [])
-      const reply = await askAI(prompt, concept)
+      const mockCampaign = {
+        name: 'One Shot',
+        system,
+        lore: lore || 'A classic fantasy world.',
+        rules_reference: ''
+      }
+      const reply = await askAI(buildSystemPrompt('oneshot', mockCampaign, [], []), concept)
       const clean = reply.replace(/```[a-z]*\n?|```/g, '').trim()
       const parsed = JSON.parse(clean)
       setResult(parsed)
       setStep(2)
     } catch (e) {
-      setError('Generation failed — try rephrasing your concept.')
+      setError('Generation failed — try rephrasing your concept. (' + e.message + ')')
     }
     setLoading(false)
   }
 
   function handleCreate() {
     if (!result) return
-    const builtLore = (lore ? lore + '\n\n' : '')
-      + 'Setting: ' + result.setting
-      + '\nTone: ' + result.tone
-      + '\nHook: ' + result.hook
-      + '\nComplication: ' + result.complication
-      + '\nGoal: ' + result.goal
+    // Build the full lore string for the campaign
+    const builtLore = [
+      lore,
+      'Setting: ' + result.setting,
+      'Tone: ' + result.tone,
+      'Hook: ' + result.hook,
+      'Complication: ' + result.complication,
+      'Goal: ' + result.goal,
+    ].filter(Boolean).join('\n\n')
+
+    // Pass everything to Dashboard — scene_npcs, hook, goal etc. used for memory
     onCreate({
       name: result.title,
       system,
       lore: builtLore,
       rules_reference: result.system_note || '',
-      bg_image_url: '',
       scene_npcs: result.npcs || [],
       scene_environment: result.environment || '',
-      // Pass raw result fields for rich memory saving
       scene_hook: result.hook || '',
       scene_goal: result.goal || '',
       scene_complication: result.complication || '',
       scene_tone: result.tone || '',
+      scene_setting: result.setting || '',
+      scene_system_note: result.system_note || '',
     })
   }
 
@@ -90,23 +100,30 @@ export default function OneShotWizard({ onClose, onCreate }) {
       <div style={s.modal}>
         {step === 1 && <>
           <div style={s.title}>⚡ One Shot Generator</div>
-          <div style={s.sub}>Describe your scene concept in one sentence — the AI builds the rest.</div>
+          <div style={s.sub}>Describe your scene in one sentence — the AI builds the rest.</div>
           <label style={s.label}>Game system</label>
           <select style={s.select} value={system} onChange={e => setSystem(e.target.value)}>
-            {SYSTEM_NAMES_LIST.map(s => <option key={s} value={s}>{s}</option>)}
+            {SYSTEMS.map(sys => <option key={sys} value={sys}>{sys}</option>)}
           </select>
-          <label style={s.label}>World setting or lore (optional)</label>
-          <textarea style={s.textarea} placeholder="e.g. Eberron — a world of magic-powered technology and political intrigue after a devastating war..." value={lore} onChange={e => setLore(e.target.value)} />
+          <label style={s.label}>World or campaign lore (optional)</label>
+          <textarea style={{ ...s.textarea, minHeight: 50, marginBottom: 4 }}
+            placeholder="e.g. Eberron — a world of magic-powered technology after a devastating war..."
+            value={lore} onChange={e => setLore(e.target.value)} />
           <label style={s.label}>Your scene concept</label>
           <div style={s.examples}>
-            {EXAMPLES.map(eg => <div key={eg} style={s.eg} onClick={() => setConcept(eg)}>{eg.slice(0, 45)}...</div>)}
+            {EXAMPLES.map(eg => (
+              <div key={eg} style={s.eg} onClick={() => setConcept(eg)}>{eg.slice(0, 44)}...</div>
+            ))}
           </div>
-          <textarea style={{ ...s.textarea, minHeight: 70 }} placeholder="e.g. A tense negotiation in a flooded dwarven hall with a betrayal twist" value={concept} onChange={e => setConcept(e.target.value)} />
-          {error && <div style={{ color: '#ff8080', fontSize: 13, marginBottom: 10 }}>{error}</div>}
+          <textarea style={s.textarea}
+            placeholder="e.g. A tense negotiation in a flooded dwarven hall with a betrayal twist"
+            value={concept} onChange={e => setConcept(e.target.value)} />
+          {error && <div style={{ ...s.error, marginTop: 8 }}>{error}</div>}
           <div style={s.row}>
             <button style={s.cancel} onClick={onClose}>Cancel</button>
             <button style={s.btn} onClick={generate} disabled={loading || !concept.trim()}>
-              {loading && <span style={s.spin} />}{loading ? 'Generating...' : '✨ Generate scene'}
+              {loading && <span style={s.spin} />}
+              {loading ? 'Generating...' : '✨ Generate scene'}
             </button>
           </div>
         </>}
@@ -114,20 +131,20 @@ export default function OneShotWizard({ onClose, onCreate }) {
         {step === 2 && result && <>
           <div style={s.title}>{result.title}</div>
           <div style={s.sub}>{system} · {result.tone}</div>
-          <div style={s.result}><div style={s.rLabel}>Setting</div><div style={s.rValue}>{result.setting}</div></div>
-          <div style={s.result}><div style={s.rLabel}>Hook — how the scene begins</div><div style={s.rValue}>{result.hook}</div></div>
-          <div style={s.result}><div style={s.rLabel}>Complication — the twist</div><div style={s.rValue}>{result.complication}</div></div>
-          <div style={s.result}><div style={s.rLabel}>Environment challenge</div><div style={s.rValue}>{result.environment}</div></div>
-          <div style={s.result}><div style={s.rLabel}>Scene goal</div><div style={s.rValue}>{result.goal}</div></div>
-          {result.system_note && <div style={s.result}><div style={s.rLabel}>Key rule for this scene</div><div style={s.rValue}>{result.system_note}</div></div>}
-          <div style={{ ...s.rLabel, marginBottom: 8, marginTop: 4 }}>NPCs in this scene</div>
+          <div style={s.result}><div style={s.rlabel}>Setting</div><div style={s.rtext}>{result.setting}</div></div>
+          <div style={s.result}><div style={s.rlabel}>Hook — how it begins</div><div style={s.rtext}>{result.hook}</div></div>
+          <div style={s.result}><div style={s.rlabel}>Complication — the twist</div><div style={s.rtext}>{result.complication}</div></div>
+          <div style={s.result}><div style={s.rlabel}>Environment challenge</div><div style={s.rtext}>{result.environment}</div></div>
+          <div style={s.result}><div style={s.rlabel}>Scene goal</div><div style={s.rtext}>{result.goal}</div></div>
+          {result.system_note && <div style={s.result}><div style={s.rlabel}>Key rule</div><div style={s.rtext}>{result.system_note}</div></div>}
+          <div style={{ ...s.rlabel, marginTop: 8, marginBottom: 8 }}>NPCs in this scene</div>
           {result.npcs?.map((npc, i) => (
-            <div key={i} style={s.npcCard}>
+            <div key={i} style={s.npc}>
               <div style={s.npcName}>{npc.name}</div>
-              <div style={s.npcSub}>{npc.role} · {npc.tone} · {npc.motivation}</div>
+              <div style={s.npcSub}>{npc.role} · {npc.tone} · Wants: {npc.motivation}</div>
             </div>
           ))}
-          <div style={{ ...s.row, marginTop: 12 }}>
+          <div style={s.row}>
             <button style={s.cancel} onClick={() => setStep(1)}>← Regenerate</button>
             <button style={s.btn} onClick={handleCreate}>▶ Start this scene</button>
           </div>
