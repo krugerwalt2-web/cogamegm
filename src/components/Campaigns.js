@@ -40,6 +40,7 @@ export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreat
   const [uploadName, setUploadName] = useState('')
   const [uploadedDoc, setUploadedDoc] = useState('')
   const [creating, setCreating] = useState(false)
+  const [showCreate, setShowCreate] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
   const fileRef = useRef()
@@ -65,6 +66,7 @@ export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreat
       const combined = (lore + (uploadedDoc ? '\n\n--- Uploaded document ---\n' + uploadedDoc : '')).trim() || 'A fantasy world.'
       await onCreate(name.trim(), system, combined, rules.trim(), bgUrl.trim())
       setName(''); setLore(''); setRules(''); setBgUrl(''); setUploadedDoc(''); setUploadName('')
+      setShowCreate(false)
     } catch (e) { alert('Error: ' + e.message) }
     setCreating(false)
   }
@@ -88,40 +90,10 @@ export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreat
 
   return (
     <>
-      <div style={s.card}>
-        <div style={s.clabel}>New campaign or scene</div>
-        <div style={s.grid}>
-          <div>
-            <label style={s.label}>Campaign name</label>
-            <input style={s.input} placeholder="e.g. The Witherwild" value={name} onChange={e => setName(e.target.value)} />
-          </div>
-          <div>
-            <label style={s.label}>Game system</label>
-            <select style={s.select} value={system} onChange={e => setSystem(e.target.value)}>
-              {SYSTEMS.map(sys => <option key={sys} value={sys}>{sys}</option>)}
-            </select>
-          </div>
-        </div>
-        {PACKS_LOADED.includes(system) && <div style={s.sysNote}>✓ {system} rules pack loaded automatically</div>}
-        <label style={s.label}>World lore, tone & key facts</label>
-        <textarea style={s.textarea} placeholder="Dark gothic wilderness. Cursed forest where trees remember the dead. Tone: atmospheric, dangerous, morally complex..." value={lore} onChange={e => setLore(e.target.value)} />
-        <label style={s.label}>Upload lore document (.txt)</label>
-        <label style={s.uploadBtn} onClick={() => fileRef.current.click()}>
-          📄 Upload {uploadName && <span style={{ color: '#60c080', marginLeft: 4 }}>✓ {uploadName}</span>}
-        </label>
-        <input ref={fileRef} type="file" accept=".txt,.md" style={{ display: 'none' }} onChange={handleFile} />
-        <label style={s.label}>House rules or custom mechanics</label>
-        <textarea style={{ ...s.textarea, minHeight: 50 }} placeholder="Custom mechanics, house rules..." value={rules} onChange={e => setRules(e.target.value)} />
-        <label style={s.label}>Background image URL (optional)</label>
-        <input style={s.input} placeholder="https://... paste an image URL to skin this campaign" value={bgUrl} onChange={e => setBgUrl(e.target.value)} />
-        <button style={s.createBtn} onClick={handleCreate} disabled={creating || !name.trim()}>
-          {creating ? 'Creating...' : '+ Create campaign'}
-        </button>
-      </div>
-
+      {/* Campaign list first */}
       <div style={s.card}>
         <div style={s.clabel}>Your campaigns</div>
-        {campaigns.length === 0 && <div style={s.empty}>No campaigns yet — create one above or use ⚡ One Shot.</div>}
+        {campaigns.length === 0 && <div style={s.empty}>No campaigns yet — create one below or use ⚡ One Shot.</div>}
         {campaigns.map(c => (
           <div key={c.id}>
             <div style={activeCampaign?.id === c.id ? s.citemSel : s.citem} onClick={() => onSelect(c)}>
@@ -160,6 +132,45 @@ export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreat
           </div>
         ))}
       </div>
+
+      {/* Create campaign toggle */}
+      <button style={s.createToggleBtn} onClick={() => setShowCreate(!showCreate)}>
+        {showCreate ? '✕ Cancel' : '+ Create campaign'}
+      </button>
+
+      {/* Collapsible create form */}
+      {showCreate && <div style={s.createFormCard}>
+        <div style={s.clabel}>New campaign or scene</div>
+        <div style={s.grid}>
+          <div>
+            <label style={s.label}>Campaign name</label>
+            <input style={s.input} placeholder="e.g. The Witherwild" value={name} onChange={e => setName(e.target.value)} />
+          </div>
+          <div>
+            <label style={s.label}>Game system</label>
+            <select style={s.select} value={system} onChange={e => setSystem(e.target.value)}>
+              {SYSTEMS.map(sys => <option key={sys} value={sys}>{sys}</option>)}
+            </select>
+          </div>
+        </div>
+        {PACKS_LOADED.includes(system) && <div style={s.sysNote}>✓ {system} rules pack loaded automatically</div>}
+        <label style={s.label}>World lore, tone & key facts</label>
+        <textarea style={s.textarea} placeholder="Dark gothic wilderness. Cursed forest where trees remember the dead. Tone: atmospheric, dangerous, morally complex..." value={lore} onChange={e => setLore(e.target.value)} />
+        <label style={s.label}>Upload lore document (.txt)</label>
+        <label style={s.uploadBtn} onClick={() => fileRef.current.click()}>
+          📄 Upload {uploadName && <span style={{ color: '#60c080', marginLeft: 4 }}>✓ {uploadName}</span>}
+        </label>
+        <input ref={fileRef} type="file" accept=".txt,.md" style={{ display: 'none' }} onChange={handleFile} />
+        <label style={s.label}>House rules or custom mechanics</label>
+        <textarea style={{ ...s.textarea, minHeight: 50 }} placeholder="Custom mechanics, house rules..." value={rules} onChange={e => setRules(e.target.value)} />
+        <label style={s.label}>Background image URL (optional)</label>
+        <input style={s.input} placeholder="https://... paste an image URL to skin this campaign" value={bgUrl} onChange={e => setBgUrl(e.target.value)} />
+        <button style={s.createBtn} onClick={handleCreate} disabled={creating || !name.trim()}>
+          {creating ? 'Creating...' : '+ Create campaign'}
+        </button>
+      </div>}
+
+      </div>}
     </>
   )
 }

@@ -29,6 +29,14 @@ function makeDefaultButtons(campName) {
   ]
 }
 
+function getCampaignBannerUrl(campaign) {
+  if (campaign.bg_image_url) return campaign.bg_image_url
+  const prompt = 'epic ' + (campaign.lore || campaign.name || 'fantasy RPG') + ', wide cinematic banner, dramatic lighting, fantasy art, landscape'
+  const clean = prompt.replace(/[^\w\s,.-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200)
+  return 'https://image.pollinations.ai/prompt/' + encodeURIComponent(clean) +
+    '?width=900&height=280&nologo=true&seed=' + (campaign.name || '').split('').reduce((a,c) => a + c.charCodeAt(0), 42)
+}
+
 const s = {
   wrap: { position: 'relative' },
   bg: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0, backgroundSize: 'cover', backgroundPosition: 'center', opacity: 0.35, pointerEvents: 'none' },
@@ -65,6 +73,11 @@ const s = {
   addInp: { flex: 1, padding: '6px 10px', background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 6, color: '#fffffe', fontSize: 12, outline: 'none', fontFamily: 'inherit' },
   npcPill: { fontSize: 12, padding: '4px 10px', borderRadius: 20, background: '#1e1a40', border: '1px solid #2d2a4a', color: '#b4aef5', cursor: 'pointer', display: 'inline-block', marginRight: 4, marginBottom: 8 },
   noCamp: { textAlign: 'center', padding: '40px 20px' },
+  banner: { width: '100%', borderRadius: 12, overflow: 'hidden', marginBottom: 10, position: 'relative', height: 140 },
+  bannerImg: { width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center', display: 'block' },
+  bannerOverlay: { position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(8,6,20,0) 0%, rgba(8,6,20,0.7) 100%)' },
+  bannerTitle: { position: 'absolute', bottom: 12, left: 14, right: 14, fontSize: 22, fontWeight: 700, color: '#fffffe', fontFamily: 'Cinzel, Georgia, serif', letterSpacing: 1, textShadow: '0 2px 8px rgba(0,0,0,0.8)', textTransform: 'uppercase' },
+  bannerSub: { position: 'absolute', bottom: 0, left: 14, fontSize: 11, color: '#b4aef5', fontFamily: 'Cinzel, Georgia, serif', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 14 },
   spin: { display: 'inline-block', width: 12, height: 12, border: '2px solid #3C3489', borderTopColor: '#b4aef5', borderRadius: '50%', animation: 'spin .7s linear infinite' },
 }
 
@@ -282,6 +295,19 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
       </>}
 
       <div style={s.z}>
+        {/* Campaign banner */}
+        <div style={s.banner}>
+          <img
+            src={getCampaignBannerUrl(campaign)}
+            alt={campaign.name}
+            style={s.bannerImg}
+            onError={e => { e.target.parentElement.style.display = 'none' }}
+          />
+          <div style={s.bannerOverlay} />
+          <div style={s.bannerTitle}>{campaign.name}</div>
+          <div style={s.bannerSub}>{campaign.system}</div>
+        </div>
+
         {/* Output card */}
         <div style={s.card}>
           <div style={s.clabel}>
