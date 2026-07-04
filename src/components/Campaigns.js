@@ -14,6 +14,7 @@ const s = {
   sysNote: { fontSize: 12, color: '#60c080', padding: '6px 10px', background: '#0f1a0f', border: '1px solid #1a3a1a', borderRadius: 6, marginTop: 4 },
   uploadBtn: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 8, color: '#a49fc8', fontSize: 13, cursor: 'pointer' },
   createBtn: { width: '100%', padding: 9, background: '#3C3489', color: '#EEEDFE', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginTop: 10 },
+  toggleBtn: { width: '100%', padding: 11, background: '#3C3489', color: '#EEEDFE', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12 },
   citem: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: '1px solid #2d2a4a', cursor: 'pointer', marginBottom: 6, background: '#0f0e17' },
   citemSel: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: '1px solid #534AB7', cursor: 'pointer', marginBottom: 6, background: '#1e1a40' },
   dot: { width: 8, height: 8, borderRadius: '50%', background: '#534AB7', flexShrink: 0 },
@@ -28,7 +29,7 @@ const s = {
   editRow: { display: 'flex', gap: 8, marginTop: 10 },
   saveBtn: { flex: 1, padding: 8, background: '#3C3489', color: '#EEEDFE', border: 'none', borderRadius: 7, fontSize: 13, cursor: 'pointer', fontWeight: 600 },
   cancelBtn: { padding: 8, background: 'transparent', border: '1px solid #2d2a4a', borderRadius: 7, fontSize: 13, color: '#a49fc8', cursor: 'pointer' },
-  empty: { fontSize: 13, color: '#6b6890', fontStyle: 'italic' }
+  empty: { fontSize: 13, color: '#6b6890', fontStyle: 'italic' },
 }
 
 export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreate, onUpdate, onDelete }) {
@@ -90,10 +91,12 @@ export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreat
 
   return (
     <>
-      {/* Campaign list first */}
+      {/* Campaign list — shown first */}
       <div style={s.card}>
         <div style={s.clabel}>Your campaigns</div>
-        {campaigns.length === 0 && <div style={s.empty}>No campaigns yet — create one below or use ⚡ One Shot.</div>}
+        {campaigns.length === 0 && (
+          <div style={s.empty}>No campaigns yet — create one below or use ⚡ One Shot.</div>
+        )}
         {campaigns.map(c => (
           <div key={c.id}>
             <div style={activeCampaign?.id === c.id ? s.citemSel : s.citem} onClick={() => onSelect(c)}>
@@ -133,44 +136,52 @@ export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreat
         ))}
       </div>
 
-      {/* Create campaign toggle */}
-      <button style={s.createToggleBtn} onClick={() => setShowCreate(!showCreate)}>
+      {/* Toggle create form */}
+      <button style={s.toggleBtn} onClick={() => setShowCreate(!showCreate)}>
         {showCreate ? '✕ Cancel' : '+ Create campaign'}
       </button>
 
       {/* Collapsible create form */}
-      {showCreate && <div style={s.createFormCard}>
-        <div style={s.clabel}>New campaign or scene</div>
-        <div style={s.grid}>
-          <div>
-            <label style={s.label}>Campaign name</label>
-            <input style={s.input} placeholder="e.g. The Witherwild" value={name} onChange={e => setName(e.target.value)} />
+      {showCreate && (
+        <div style={s.card}>
+          <div style={s.clabel}>New campaign or scene</div>
+          <div style={s.grid}>
+            <div>
+              <label style={s.label}>Campaign name</label>
+              <input style={s.input} placeholder="e.g. The Witherwild" value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div>
+              <label style={s.label}>Game system</label>
+              <select style={s.select} value={system} onChange={e => setSystem(e.target.value)}>
+                {SYSTEMS.map(sys => <option key={sys} value={sys}>{sys}</option>)}
+              </select>
+            </div>
           </div>
-          <div>
-            <label style={s.label}>Game system</label>
-            <select style={s.select} value={system} onChange={e => setSystem(e.target.value)}>
-              {SYSTEMS.map(sys => <option key={sys} value={sys}>{sys}</option>)}
-            </select>
-          </div>
+          {PACKS_LOADED.includes(system) && (
+            <div style={s.sysNote}>✓ {system} rules pack loaded automatically</div>
+          )}
+          <label style={s.label}>World lore, tone & key facts</label>
+          <textarea style={s.textarea}
+            placeholder="Dark gothic wilderness. Cursed forest where trees remember the dead. Tone: atmospheric, dangerous, morally complex..."
+            value={lore} onChange={e => setLore(e.target.value)} />
+          <label style={s.label}>Upload lore document (.txt)</label>
+          <label style={s.uploadBtn} onClick={() => fileRef.current.click()}>
+            📄 Upload {uploadName && <span style={{ color: '#60c080', marginLeft: 4 }}>✓ {uploadName}</span>}
+          </label>
+          <input ref={fileRef} type="file" accept=".txt,.md" style={{ display: 'none' }} onChange={handleFile} />
+          <label style={s.label}>House rules or custom mechanics</label>
+          <textarea style={{ ...s.textarea, minHeight: 50 }}
+            placeholder="Custom mechanics, house rules..."
+            value={rules} onChange={e => setRules(e.target.value)} />
+          <label style={s.label}>Background image URL (optional)</label>
+          <input style={s.input}
+            placeholder="https://... paste an image URL to skin this campaign"
+            value={bgUrl} onChange={e => setBgUrl(e.target.value)} />
+          <button style={s.createBtn} onClick={handleCreate} disabled={creating || !name.trim()}>
+            {creating ? 'Creating...' : '+ Create campaign'}
+          </button>
         </div>
-        {PACKS_LOADED.includes(system) && <div style={s.sysNote}>✓ {system} rules pack loaded automatically</div>}
-        <label style={s.label}>World lore, tone & key facts</label>
-        <textarea style={s.textarea} placeholder="Dark gothic wilderness. Cursed forest where trees remember the dead. Tone: atmospheric, dangerous, morally complex..." value={lore} onChange={e => setLore(e.target.value)} />
-        <label style={s.label}>Upload lore document (.txt)</label>
-        <label style={s.uploadBtn} onClick={() => fileRef.current.click()}>
-          📄 Upload {uploadName && <span style={{ color: '#60c080', marginLeft: 4 }}>✓ {uploadName}</span>}
-        </label>
-        <input ref={fileRef} type="file" accept=".txt,.md" style={{ display: 'none' }} onChange={handleFile} />
-        <label style={s.label}>House rules or custom mechanics</label>
-        <textarea style={{ ...s.textarea, minHeight: 50 }} placeholder="Custom mechanics, house rules..." value={rules} onChange={e => setRules(e.target.value)} />
-        <label style={s.label}>Background image URL (optional)</label>
-        <input style={s.input} placeholder="https://... paste an image URL to skin this campaign" value={bgUrl} onChange={e => setBgUrl(e.target.value)} />
-        <button style={s.createBtn} onClick={handleCreate} disabled={creating || !name.trim()}>
-          {creating ? 'Creating...' : '+ Create campaign'}
-        </button>
-      </div>}
-
-      </div>}
+      )}
     </>
   )
 }

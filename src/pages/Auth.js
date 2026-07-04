@@ -240,9 +240,7 @@ export default function Auth() {
 
   return (
     <div style={s.wrap}>
-      <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&display=swap" rel="stylesheet" />
-
-      {bgLoaded && <div style={{ ...s.bgImg, backgroundImage: `url(${BG})` }} />}
+      {bgLoaded && <div style={{ ...s.bgImg, backgroundImage: 'url(' + BG + ')' }} />}
       <div style={s.bgGrad} />
 
       <div style={s.stars}>
