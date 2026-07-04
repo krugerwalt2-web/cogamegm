@@ -26,11 +26,13 @@ export async function askAI(systemPrompt, userMessage) {
 
 // ── Image generation (Pollinations.AI — free, no key) ───────────────────────
 export async function generateImage(prompt, lore) {
-  const style = 'fantasy tabletop RPG art, detailed illustration, dramatic lighting, epic composition'
-  const full = (style + ', ' + prompt + (lore ? ', ' + lore.slice(0, 100) : ''))
-    .replace(/[^\w\s,.-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300)
+  const style = 'fantasy tabletop RPG digital art, dramatic lighting, epic cinematic'
+  const full = (style + ', ' + prompt + (lore ? ', ' + lore.slice(0, 80) : ''))
+    .replace(/[^\w\s,.-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 250)
+  const seed = Math.floor(Math.random() * 999999)
+  // Use Pollinations with model parameter for best results
   return 'https://image.pollinations.ai/prompt/' + encodeURIComponent(full) +
-    '?width=768&height=512&nologo=true&seed=' + Math.floor(Math.random() * 99999)
+    '?model=flux&width=768&height=512&nologo=true&seed=' + seed + '&enhance=true'
 }
 
 // ── Intent detection ─────────────────────────────────────────────────────────
