@@ -181,11 +181,14 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
   }
 
   async function generateImageForOutput() {
-    if (!currentTextRef.current) return
+    const text = currentTextRef.current
+    if (!text) return
     setImgLoading(true)
     setGeneratedImage(null)
     currentImageRef.current = null
-    const url = await generateImage(currentTextRef.current, campaign?.lore || '')
+    // Remove any [IMAGE:...] refs from saved text before generating
+    const clean = text.replace(/\[IMAGE:[^\]]+\]/g, '').trim()
+    const url = await generateImage(clean, campaign?.lore || '')
     currentImageRef.current = url
     setGeneratedImage(url)
     setImgLoading(false)
@@ -337,7 +340,21 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
           {generatedImage && (
             <div style={s.imgWrap}>
               <img src={generatedImage} alt="Generated scene" style={s.imgEl}
-                onError={e => { e.target.style.display = 'none' }} />
+                onLoad={e => { e.target.style.opacity = 1 }}
+                onError={e => {
+                  e.target.style.display = 'none'
+                  const fallback = document.getElementById('img-fallback')
+                  if (fallback) fallback.style.display = 'block'
+                }}
+                style={{ ...s.imgEl, opacity: 0, transition: 'opacity 0.5s' }}
+              />
+              <div id="img-fallback" style={{ display: 'none', padding: '14px', textAlign: 'center', background: '#0f0e17' }}>
+                <div style={{ fontSize: 13, color: '#a49fc8', marginBottom: 8 }}>Image generated — open in browser to view:</div>
+                <a href={generatedImage} target="_blank" rel="noreferrer"
+                  style={{ fontSize: 12, color: '#b4aef5', wordBreak: 'break-all' }}>
+                  🖼️ Open image in new tab
+                </a>
+              </div>
             </div>
           )}
 
