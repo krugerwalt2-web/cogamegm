@@ -303,7 +303,7 @@ export default function Dashboard({ session }) {
       {tab === 'memory' && (
         <Memory campaign={activeCampaign} memory={memory} onDelete={deleteMemory} />
       )}
-      {tab === 'resources' && <Resources />}
+      {tab === 'resources' && <Resources userId={session.user.id} />}
     </div>
   )
 }
