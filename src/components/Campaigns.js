@@ -51,11 +51,26 @@ export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreat
     setUploadName(file.name)
     const reader = new FileReader()
     reader.onload = ev => {
-      const clean = ev.target.result
-        .replace(/\0/g, '')
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
-        .replace(/\s+/g, ' ').trim().slice(0, 4000)
-      setUploadedDoc(clean)
+      try {
+        const raw = ev.target.result || ''
+        const clean = raw
+          .replace(/\0/g, '')
+          .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, ' ')
+          .replace(/[\uFFFD\uFFFE\uFFFF]/g, '')
+          .replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+          .replace(/[ \t]+/g, ' ')
+          .trim()
+          .slice(0, 3000)
+        setUploadedDoc(clean)
+        setUploadName(file.name + ' (' + Math.round(raw.length / 1024) + 'kb)')
+      } catch (err) {
+        setUploadName('Error reading file — try saving as plain .txt')
+        setUploadedDoc('')
+      }
+    }
+    reader.onerror = () => {
+      setUploadName('File read failed — try a different file')
+      setUploadedDoc('')
     }
     reader.readAsText(file, 'UTF-8')
   }

@@ -27,12 +27,13 @@ const s = {
   linkActions: { marginLeft: 'auto', display: 'flex', gap: 6, flexShrink: 0 },
   openBtn: { fontSize: 11, padding: '4px 10px', border: '1px solid #2d2a4a', borderRadius: 6, background: 'transparent', color: '#a49fc8', cursor: 'pointer', textDecoration: 'none', display: 'inline-block' },
   delSmall: { fontSize: 11, padding: '4px 8px', border: '1px solid #5a2020', borderRadius: 6, background: 'transparent', color: '#e06060', cursor: 'pointer' },
-  imgGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 8 },
-  imgCard: { borderRadius: 8, overflow: 'hidden', border: '1px solid #2d2a4a', position: 'relative', background: '#0f0e17' },
-  imgEl: { width: '100%', height: 130, objectFit: 'cover', display: 'block' },
-  imgOverlay: { position: 'absolute', top: 6, right: 6 },
-  imgDelBtn: { padding: '3px 8px', background: 'rgba(20,10,30,0.85)', border: '1px solid #5a2020', borderRadius: 5, color: '#e06060', fontSize: 11, cursor: 'pointer' },
-  imgAddBox: { height: 130, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, color: '#3a3660', border: '2px dashed #2d2a4a', borderRadius: 8, cursor: 'pointer', background: '#0a0818', width: '100%' },
+  imgGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 8 },
+  imgCard: { borderRadius: 6, overflow: 'hidden', border: '1px solid #2d2a4a', position: 'relative', background: '#0f0e17', aspectRatio: '1/1' },
+  imgEl: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
+  imgOverlay: { position: 'absolute', top: 4, right: 4, opacity: 0 },
+  imgCard_hover: { position: 'relative' },
+  imgDelBtn: { padding: '2px 6px', background: 'rgba(20,10,30,0.9)', border: '1px solid #5a2020', borderRadius: 4, color: '#e06060', fontSize: 10, cursor: 'pointer' },
+  imgAddBox: { aspectRatio: '1/1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, color: '#3a3660', border: '2px dashed #2d2a4a', borderRadius: 6, cursor: 'pointer', background: '#0a0818', width: '100%' },
   tipItem: { display: 'flex', gap: 10, padding: '10px 0', borderBottom: '1px solid #1e1c30', alignItems: 'flex-start' },
   tipIcon: { fontSize: 18, flexShrink: 0, marginTop: 1 },
   tipTitle: { fontSize: 13, fontWeight: 500, color: '#e8d8ff', marginBottom: 2 },
@@ -51,10 +52,15 @@ const GM_TIPS = [
 
 const USEFUL_LINKS = [
   { icon: '🎵', name: 'Tabletop Audio', desc: '600+ free TTRPG ambient tracks', url: 'https://tabletopaudio.com' },
-  { icon: '📖', name: 'D&D Beyond', desc: 'D&D 5e rules reference', url: 'https://www.dndbeyond.com' },
-  { icon: '🌍', name: 'Daggerheart', desc: 'Darrington Press official site', url: 'https://darringtonpress.com' },
-  { icon: '⚡', name: 'Marvel Multiverse RPG', desc: 'Official Marvel RPG site', url: 'https://marvelrpg.com' },
+  { icon: '📖', name: 'D&D Beyond', desc: 'D&D 5e rules & character tools', url: 'https://www.dndbeyond.com' },
+  { icon: '🌍', name: 'Daggerheart', desc: 'Official site — daggerheart.com', url: 'https://www.daggerheart.com' },
+  { icon: '⚡', name: 'Marvel Multiverse RPG', desc: 'Official Marvel RPG — marvel.com/rpg', url: 'https://www.marvel.com/rpg' },
   { icon: '🎨', name: 'Pollinations.AI', desc: 'Free AI image generation', url: 'https://pollinations.ai' },
+  { icon: '🎲', name: 'Pathfinder 2e', desc: 'Official Paizo site', url: 'https://paizo.com/pathfinder' },
+  { icon: '🐙', name: 'Call of Cthulhu', desc: 'Chaosium official site', url: 'https://www.chaosium.com/call-of-cthulhu-rpg' },
+  { icon: '🌆', name: 'Shadowrun', desc: 'Catalyst Game Labs', url: 'https://www.catalystgamelabs.com/shadowrun' },
+  { icon: '🎭', name: 'Demiplane', desc: 'Digital toolset for multiple systems', url: 'https://www.demiplane.com' },
+  { icon: '🗺️', name: 'Roll20', desc: 'Virtual tabletop & rule compendiums', url: 'https://roll20.net' },
 ]
 
 function getYouTubeId(url) {
@@ -76,6 +82,27 @@ function getYouTubeThumb(url) {
 
 function looksLikeImage(url) {
   return /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(url)
+}
+
+function ImgThumb({ img, onDelete }) {
+  const [hover, setHover] = React.useState(false)
+  return (
+    <div style={{ borderRadius: 6, overflow: 'hidden', border: '1px solid #2d2a4a', position: 'relative', background: '#0f0e17', aspectRatio: '1/1' }}
+      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+      <img src={img.url} alt="Resource"
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', cursor: 'pointer' }}
+        onClick={() => window.open(img.url, '_blank')}
+        onError={e => { e.target.style.opacity = '0.3' }} />
+      {hover && (
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+          <button style={{ padding: '4px 8px', background: 'rgba(20,10,30,0.9)', border: '1px solid #5a2020', borderRadius: 4, color: '#e06060', fontSize: 11, cursor: 'pointer' }}
+            onClick={e => { e.stopPropagation(); onDelete() }}>🗑️</button>
+          <a href={img.url} target="_blank" rel="noreferrer"
+            style={{ padding: '4px 8px', background: 'rgba(20,10,30,0.9)', border: '1px solid #2d2a4a', borderRadius: 4, color: '#a49fc8', fontSize: 11, textDecoration: 'none' }}>⬆️</a>
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function Resources({ userId }) {
@@ -255,18 +282,9 @@ export default function Resources({ userId }) {
         {images.length === 0 && <div style={s.empty}>Add campaign art, maps, or character art by URL.</div>}
         <div style={s.imgGrid}>
           {images.map(img => (
-            <div key={img.id} style={s.imgCard}>
-              <img src={img.url} alt="Resource" style={s.imgEl}
-                onError={e => { e.target.style.background = '#1a1830'; e.target.alt = '⚠️ Image failed to load' }} />
-              <div style={s.imgOverlay}>
-                <button style={s.imgDelBtn}
-                  onClick={() => setImages(prev => prev.filter(i => i.id !== img.id))}>🗑️</button>
-              </div>
-            </div>
+            <ImgThumb key={img.id} img={img} onDelete={() => setImages(prev => prev.filter(i => i.id !== img.id))} />
           ))}
-          <div style={{ display: 'flex', alignItems: 'stretch' }}>
-            <button style={s.imgAddBox} onClick={() => setShowImgAdd(true)}>+</button>
-          </div>
+          <button style={s.imgAddBox} onClick={() => setShowImgAdd(true)}>+</button>
         </div>
         {showImgAdd && (
           <div style={s.urlRow}>
@@ -311,6 +329,19 @@ export default function Resources({ userId }) {
             </div>
           </div>
         ))}
+      </div>
+      {/* Copyright notice */}
+      <div style={{ background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 12, padding: '14px 16px', marginBottom: 12 }}>
+        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#4a3a70', marginBottom: 8 }}>
+          © Copyright & ownership
+        </div>
+        <div style={{ fontSize: 11, color: '#4a3a70', lineHeight: 1.7 }}>
+          <strong style={{ color: '#6a5a90' }}>© 2026 Co-Game GM. All rights reserved.</strong><br />
+          All AI-generated content, app design, and original materials are the intellectual property of Co-Game GM. Unauthorized reproduction or distribution is prohibited.<br /><br />
+          <strong style={{ color: '#6a5a90' }}>Introduction video:</strong> The Co-Game GM introduction video is © 2026 Co-Game GM. All rights reserved. Reproduction or redistribution without written permission is prohibited.<br /><br />
+          Referenced game systems, settings, and lore remain the property of their respective publishers. Co-Game GM is an independent tool and is not affiliated with or endorsed by any game publisher.<br /><br />
+          For licensing inquiries contact: <span style={{ color: '#7b72d9' }}>cogamegm@gmail.com</span>
+        </div>
       </div>
     </>
   )
