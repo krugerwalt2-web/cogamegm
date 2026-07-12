@@ -22,7 +22,7 @@ const s = {
 }
 
 export default function Dashboard({ session }) {
-  const [tab, setTab] = useState('session')
+  const [tab, setTab] = useState('campaigns')
   const [campaigns, setCampaigns] = useState([])
   const [activeCampaign, setActiveCampaign] = useState(null)
   const [memory, setMemory] = useState([])
@@ -275,7 +275,7 @@ export default function Dashboard({ session }) {
       </div>
 
       <div style={s.tabs}>
-        {[['session', '▶ Session'], ['campaigns', '📖 Campaigns'], ['memory', '🧠 Memory'], ['resources', '📚 Resources']].map(([t, l]) => (
+        {[['campaigns', '📖 Campaigns'], ['memory', '🧠 Memory'], ['session', '▶ Session'], ['resources', '📚 Resources']].map(([t, l]) => (
           <button key={t} style={tab === t ? s.tabOn : s.tab} onClick={() => setTab(t)}>{l}</button>
         ))}
       </div>
