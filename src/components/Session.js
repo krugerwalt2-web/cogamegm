@@ -443,6 +443,7 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
               <button style={{ ...s.abtn }} onClick={() => setAddingBtn(false)}>Cancel</button>
             </div>
           )}
+            <CombatTracker />
         </div>
       </div>
     </div>
