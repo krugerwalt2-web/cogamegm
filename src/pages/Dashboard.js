@@ -19,9 +19,10 @@ const s = {
   osbtn: { fontSize: 12, padding: '5px 12px', background: '#1e1a40', border: '1px solid #534AB7', borderRadius: 7, color: '#b4aef5', cursor: 'pointer', fontWeight: 500 },
   gm: { fontSize: 12, color: '#a49fc8' },
   signout: { fontSize: 11, padding: '3px 8px', background: 'transparent', border: '1px solid #2d2a4a', borderRadius: 5, color: '#6b6890', cursor: 'pointer' },
-  tabs: { display: 'flex', gap: 6, marginBottom: 12 },
-  tab: { fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '1px solid #2d2a4a', background: '#1a1830', color: '#a49fc8', cursor: 'pointer' },
-  tabOn: { fontSize: 13, padding: '6px 14px', borderRadius: 8, border: '1px solid #3C3489', background: '#3C3489', color: '#EEEDFE', cursor: 'pointer' },
+  tabs: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 12 },
+  tab: { fontSize: 13, padding: '10px 8px', borderRadius: 8, border: '1px solid #2d2a4a', background: '#1a1830', color: '#a49fc8', cursor: 'pointer' },
+  tabOn: { fontSize: 13, padding: '10px 8px', borderRadius: 8, border: '1px solid #3C3489', background: '#3C3489', color: '#EEEDFE', cursor: 'pointer' },
+  tabOneShot: { fontSize: 13, padding: '10px 8px', borderRadius: 8, border: '1px solid #534AB7', background: 'transparent', color: '#b4aef5', cursor: 'pointer', fontWeight: 600 },
 }
 
 export default function Dashboard({ session }) {
@@ -277,8 +278,22 @@ export default function Dashboard({ session }) {
       </div>
 
       <div style={s.tabs}>
-        {[['campaigns', '📖 Campaigns'], ['memory', '🧠 Memory'], ['session', '▶ Session'], ['character', '⚔️ Character'], ['sounds', '🎵 Sounds'], ['images', '🖼️ Images'], ['resources', '📚 Resources']].map(([t, l]) => (
-          <button key={t} style={tab === t ? s.tabOn : s.tab} onClick={() => setTab(t)}>{l}</button>
+        {[
+          ['campaigns', '📖 Campaigns'],
+          ['memory', '🧠 Memory'],
+          ['session', '▶ Session'],
+          ['character', '⚔️ Character'],
+          ['oneshot', '⚡ One Shot'],
+          ['sounds', '🎵 Sounds'],
+          ['images', '🖼️ Images'],
+          ['resources', '📚 Resources'],
+        ].map(([t, l]) => (
+          <button
+            key={t}
+            style={t === 'oneshot' ? s.tabOneShot : (tab === t ? s.tabOn : s.tab)}
+            onClick={() => t === 'oneshot' ? setShowOneShot(true) : setTab(t)}>
+            {l}
+          </button>
         ))}
       </div>
 
@@ -300,7 +315,6 @@ export default function Dashboard({ session }) {
           onCreate={handleCampaignCreate}
           onUpdate={updateCampaign}
           onDelete={deleteCampaign}
-          onOneShot={() => setShowOneShot(true)}
         />
       )}
       {tab === 'memory' && (
