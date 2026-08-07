@@ -69,6 +69,11 @@ const s = {
 
   empty: { padding: '24px', textAlign: 'center', color: '#4a3a70', fontSize: 13, fontStyle: 'italic' },
   savedTag: { fontSize: 10, color: '#4a3a70' },
+
+  outerCard: { background: '#1a1830', border: '1px solid #2d2a4a', borderRadius: 12, padding: '16px 20px', marginBottom: 12 },
+  noCamp: { textAlign: 'center', padding: '32px 20px' },
+  noCampText: { fontSize: 14, color: '#a49fc8', marginBottom: 16 },
+  goBtn: { padding: '9px 20px', background: '#3C3489', color: '#EEEDFE', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' },
 }
 
 function Counter({ value, onChange, color }) {
@@ -95,7 +100,7 @@ function Counter({ value, onChange, color }) {
   )
 }
 
-export default function CombatTracker() {
+export default function CombatTracker({ campaign, onGoToCampaigns }) {
   const [creatures, setCreatures] = useState([])
   const [showAdd, setShowAdd] = useState(false)
   const [sortByInit, setSortByInit] = useState(false)
@@ -105,37 +110,45 @@ export default function CombatTracker() {
   const [newInit, setNewInit] = useState('')
   const [newMaxHp, setNewMaxHp] = useState('')
   const nameRef = useRef()
-  const loadedRef = useRef(false)
   const nextIdRef = useRef(1)
+  // Tracks which campaign's data is currently loaded, so the save effect
+  // never writes into the wrong campaign's slot while a switch is in flight.
+  const loadedForKeyRef = useRef(null)
 
-  // Load saved tracker on mount
+  const storageKey = campaign?.id ? STORAGE_KEY + '_' + campaign.id : null
+
+  // Load this campaign's saved tracker whenever the selected campaign changes
   useEffect(() => {
+    if (!storageKey) {
+      setCreatures([]); setSortByInit(false); setOpenNotes({})
+      loadedForKeyRef.current = null
+      return
+    }
     try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      if (raw) {
-        const saved = JSON.parse(raw)
-        if (Array.isArray(saved.creatures)) {
-          setCreatures(saved.creatures)
-          const maxId = saved.creatures.reduce((m, c) => Math.max(m, c.id || 0), 0)
-          nextIdRef.current = maxId + 1
-        }
-        if (typeof saved.sortByInit === 'boolean') setSortByInit(saved.sortByInit)
-      }
+      const raw = localStorage.getItem(storageKey)
+      const saved = raw ? JSON.parse(raw) : { creatures: [], sortByInit: false }
+      const list = Array.isArray(saved.creatures) ? saved.creatures : []
+      setCreatures(list)
+      setSortByInit(typeof saved.sortByInit === 'boolean' ? saved.sortByInit : false)
+      const maxId = list.reduce((m, c) => Math.max(m, c.id || 0), 0)
+      nextIdRef.current = maxId + 1
     } catch (e) {
       console.error('Combat tracker: failed to load saved state', e)
+      setCreatures([]); setSortByInit(false)
     }
-    loadedRef.current = true
-  }, [])
+    setOpenNotes({})
+    loadedForKeyRef.current = storageKey
+  }, [storageKey])
 
-  // Persist on every change (skip the very first render before load completes)
+  // Persist on every change, only once load for this campaign has completed
   useEffect(() => {
-    if (!loadedRef.current) return
+    if (!storageKey || loadedForKeyRef.current !== storageKey) return
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ creatures, sortByInit }))
+      localStorage.setItem(storageKey, JSON.stringify({ creatures, sortByInit }))
     } catch (e) {
       console.error('Combat tracker: failed to save state', e)
     }
-  }, [creatures, sortByInit])
+  }, [creatures, sortByInit, storageKey])
 
   function addCreature() {
     if (!newName.trim()) return
@@ -178,12 +191,22 @@ export default function CombatTracker() {
 
   const list = sortedCreatures()
 
+  if (!campaign) return (
+    <div style={s.outerCard}>
+      <div style={s.noCamp}>
+        <div style={{ fontSize: 36, marginBottom: 12 }}>⚔️</div>
+        <div style={s.noCampText}>Select a campaign to use its creature & NPC tracker.</div>
+        <button style={s.goBtn} onClick={onGoToCampaigns}>Go to Campaigns</button>
+      </div>
+    </div>
+  )
+
   return (
     <div style={s.wrap}>
       {/* Header */}
       <div style={s.header}>
         <div>
-          <span style={s.headerTitle}>Creature & NPC Health Tracker</span>
+          <span style={s.headerTitle}>Creature & NPC Health Tracker — {campaign.name}</span>
           <span style={s.headerVersion}>v2.0</span>
         </div>
         <div style={s.headerBtns}>
@@ -294,7 +317,7 @@ export default function CombatTracker() {
           </div>
         )}
 
-        {creatures.length > 0 && <div style={s.savedTag}>Autosaved to this device</div>}
+        {creatures.length > 0 && <div style={s.savedTag}>Autosaved with {campaign.name} on this device</div>}
       </div>
     </div>
   )

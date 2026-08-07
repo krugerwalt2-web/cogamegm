@@ -15,6 +15,7 @@ const s = {
   uploadBtn: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 14px', background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 8, color: '#a49fc8', fontSize: 13, cursor: 'pointer' },
   createBtn: { width: '100%', padding: 9, background: '#3C3489', color: '#EEEDFE', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginTop: 10 },
   toggleBtn: { width: '100%', padding: 11, background: '#3C3489', color: '#EEEDFE', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 12 },
+  oneShotBtn: { width: '100%', padding: 11, background: '#1e1a40', border: '1px solid #534AB7', borderRadius: 8, fontSize: 13, fontWeight: 600, color: '#b4aef5', cursor: 'pointer', marginBottom: 12 },
   citem: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: '1px solid #2d2a4a', cursor: 'pointer', marginBottom: 6, background: '#0f0e17' },
   citemSel: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 8, border: '1px solid #534AB7', cursor: 'pointer', marginBottom: 6, background: '#1e1a40' },
   dot: { width: 8, height: 8, borderRadius: '50%', background: '#534AB7', flexShrink: 0 },
@@ -32,7 +33,7 @@ const s = {
   empty: { fontSize: 13, color: '#6b6890', fontStyle: 'italic' },
 }
 
-export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreate, onUpdate, onDelete }) {
+export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreate, onUpdate, onDelete, onOneShot }) {
   const [name, setName] = useState('')
   const [system, setSystem] = useState('D&D 5e')
   const [lore, setLore] = useState('')
@@ -155,6 +156,11 @@ export default function Campaigns({ campaigns, activeCampaign, onSelect, onCreat
       <button style={s.toggleBtn} onClick={() => setShowCreate(!showCreate)}>
         {showCreate ? '✕ Cancel' : '+ Create campaign'}
       </button>
+
+      {/* One Shot generator — moved here from the top bar */}
+      {onOneShot && (
+        <button style={s.oneShotBtn} onClick={onOneShot}>⚡ One Shot</button>
+      )}
 
       {/* Collapsible create form */}
       {showCreate && (

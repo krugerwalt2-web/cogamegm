@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { askAI, generateImage, detectIntent, buildSystemPrompt } from '../lib/ai'
-import { playScene, SCENE_OPTIONS } from '../lib/audio'
-import CombatTracker from './CombatTracker'
 
 const TYPE_CONFIG = {
   location:    { label: 'Location',    color: '#6090e0', bg: '#1a2040', icon: '📍' },
@@ -62,10 +60,6 @@ const s = {
   micRec: { width: 44, height: 44, borderRadius: '50%', background: '#8B2020', border: 'none', fontSize: 18, cursor: 'pointer', flexShrink: 0 },
   transcript: { flex: 1, background: 'rgba(15,14,23,0.9)', border: '1px solid #2d2a4a', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#6b6890', minHeight: 44, lineHeight: 1.5 },
   seclabel: { fontSize: 11, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: '#6b6890', marginBottom: 8 },
-  audioRow: { display: 'flex', gap: 6, flexWrap: 'wrap' },
-  audioBtn: { fontSize: 12, padding: '5px 10px', borderRadius: 6, border: '1px solid #2d2a4a', color: '#a49fc8', background: 'rgba(26,24,48,0.9)', cursor: 'pointer' },
-  audioBtnOn: { fontSize: 12, padding: '5px 10px', borderRadius: 6, border: '1px solid #534AB7', color: '#b4aef5', background: '#1e1a40', cursor: 'pointer' },
-  musicRow: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, flexWrap: 'wrap' },
   btnGrid: { display: 'flex', gap: 6, flexWrap: 'wrap' },
   qbtn: { fontSize: 12, padding: '6px 11px', borderRadius: 6, border: '1px solid #2d2a4a', color: '#a49fc8', background: 'rgba(26,24,48,0.9)', cursor: 'pointer' },
   qbtnX: { fontSize: 10, color: '#3a3660', cursor: 'pointer', padding: '0 2px' },
@@ -96,9 +90,6 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
   const [addingBtn, setAddingBtn] = useState(false)
   const [newLabel, setNewLabel] = useState('')
   const [newText, setNewText] = useState('')
-  const [activeAudio, setActiveAudio] = useState('none')
-  const [musicFile, setMusicFile] = useState(null)
-  const [musicPlaying, setMusicPlaying] = useState(false)
   const [savedMsg, setSavedMsg] = useState('')
 
   // BUILD 10 FIX: use refs to track current type and image for save
@@ -108,8 +99,6 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
   const currentTextRef = useRef('')
 
   const recogRef = useRef(null)
-  const audioElemRef = useRef(null)
-  const musicFileRef = useRef(null)
 
   useEffect(() => {
     if (buttons?.length) setLocalButtons(buttons)
@@ -235,31 +224,6 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
   function stopRec() {
     setIsRec(false)
     if (recogRef.current) recogRef.current.stop()
-  }
-
-  function handleAudio(id) {
-    setActiveAudio(id)
-    playScene(id === 'none' ? null : id)
-  }
-
-  function handleMusicFile(e) {
-    const file = e.target.files[0]; if (!file) return
-    setMusicFile({ name: file.name, url: URL.createObjectURL(file) })
-    setMusicPlaying(false)
-  }
-
-  function toggleMusic() {
-    if (!audioElemRef.current || !musicFile) return
-    if (musicPlaying) {
-      audioElemRef.current.pause()
-      setMusicPlaying(false)
-    } else {
-      audioElemRef.current.src = musicFile.url
-      audioElemRef.current.loop = true
-      audioElemRef.current.volume = 0.4
-      audioElemRef.current.play().catch(() => {})
-      setMusicPlaying(true)
-    }
   }
 
   function addButton() {
@@ -395,32 +359,6 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
           <div style={s.transcript}>{transcript || 'Or tap mic to speak...'}</div>
         </div>
 
-        {/* Ambient audio */}
-        <div style={s.card}>
-          <div style={s.seclabel}>🎵 Ambient atmosphere</div>
-          <div style={s.audioRow}>
-            {SCENE_OPTIONS.map(opt => (
-              <button key={opt.id}
-                style={activeAudio === opt.id ? s.audioBtnOn : s.audioBtn}
-                onClick={() => handleAudio(opt.id)}>
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          <div style={s.musicRow}>
-            <button style={s.audioBtn} onClick={() => musicFileRef.current.click()}>
-              📂 {musicFile ? musicFile.name.slice(0, 22) + (musicFile.name.length > 22 ? '...' : '') : 'Load music file'}
-            </button>
-            {musicFile && (
-              <button style={musicPlaying ? s.audioBtnOn : s.audioBtn} onClick={toggleMusic}>
-                {musicPlaying ? '⏸ Pause' : '▶ Play'} music
-              </button>
-            )}
-            <input ref={musicFileRef} type="file" accept="audio/*" style={{ display: 'none' }} onChange={handleMusicFile} />
-            <audio ref={audioElemRef} style={{ display: 'none' }} />
-          </div>
-        </div>
-
         {/* Quick commands */}
         <div style={s.card}>
           <div style={s.seclabel}>Quick commands</div>
@@ -443,7 +381,6 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
               <button style={{ ...s.abtn }} onClick={() => setAddingBtn(false)}>Cancel</button>
             </div>
           )}
-            <CombatTracker />
         </div>
       </div>
     </div>

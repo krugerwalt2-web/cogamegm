@@ -27,13 +27,6 @@ const s = {
   linkActions: { marginLeft: 'auto', display: 'flex', gap: 6, flexShrink: 0 },
   openBtn: { fontSize: 11, padding: '4px 10px', border: '1px solid #2d2a4a', borderRadius: 6, background: 'transparent', color: '#a49fc8', cursor: 'pointer', textDecoration: 'none', display: 'inline-block' },
   delSmall: { fontSize: 11, padding: '4px 8px', border: '1px solid #5a2020', borderRadius: 6, background: 'transparent', color: '#e06060', cursor: 'pointer' },
-  imgGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 8 },
-  imgCard: { borderRadius: 6, overflow: 'hidden', border: '1px solid #2d2a4a', position: 'relative', background: '#0f0e17', aspectRatio: '1/1' },
-  imgEl: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
-  imgOverlay: { position: 'absolute', top: 4, right: 4, opacity: 0 },
-  imgCard_hover: { position: 'relative' },
-  imgDelBtn: { padding: '2px 6px', background: 'rgba(20,10,30,0.9)', border: '1px solid #5a2020', borderRadius: 4, color: '#e06060', fontSize: 10, cursor: 'pointer' },
-  imgAddBox: { aspectRatio: '1/1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, color: '#3a3660', border: '2px dashed #2d2a4a', borderRadius: 6, cursor: 'pointer', background: '#0a0818', width: '100%' },
   tipItem: { display: 'flex', gap: 10, padding: '10px 0', borderBottom: '1px solid #1e1c30', alignItems: 'flex-start' },
   tipIcon: { fontSize: 18, flexShrink: 0, marginTop: 1 },
   tipTitle: { fontSize: 13, fontWeight: 500, color: '#e8d8ff', marginBottom: 2 },
@@ -84,27 +77,6 @@ function looksLikeImage(url) {
   return /\.(jpg|jpeg|png|gif|webp|svg)(\?|$)/i.test(url)
 }
 
-function ImgThumb({ img, onDelete }) {
-  const [hover, setHover] = React.useState(false)
-  return (
-    <div style={{ borderRadius: 6, overflow: 'hidden', border: '1px solid #2d2a4a', position: 'relative', background: '#0f0e17', aspectRatio: '1/1' }}
-      onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-      <img src={img.url} alt="Resource"
-        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', cursor: 'pointer' }}
-        onClick={() => window.open(img.url, '_blank')}
-        onError={e => { e.target.style.opacity = '0.3' }} />
-      {hover && (
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-          <button style={{ padding: '4px 8px', background: 'rgba(20,10,30,0.9)', border: '1px solid #5a2020', borderRadius: 4, color: '#e06060', fontSize: 11, cursor: 'pointer' }}
-            onClick={e => { e.stopPropagation(); onDelete() }}>🗑️</button>
-          <a href={img.url} target="_blank" rel="noreferrer"
-            style={{ padding: '4px 8px', background: 'rgba(20,10,30,0.9)', border: '1px solid #2d2a4a', borderRadius: 4, color: '#a49fc8', fontSize: 11, textDecoration: 'none' }}>⬆️</a>
-        </div>
-      )}
-    </div>
-  )
-}
-
 export default function Resources({ userId }) {
   const storageKey = STORAGE_KEY + '_' + (userId || 'guest')
 
@@ -112,8 +84,8 @@ export default function Resources({ userId }) {
   function load() {
     try {
       const raw = localStorage.getItem(storageKey)
-      return raw ? JSON.parse(raw) : { videoUrl: '', links: [], images: [] }
-    } catch { return { videoUrl: '', links: [], images: [] } }
+      return raw ? JSON.parse(raw) : { videoUrl: '', links: [] }
+    } catch { return { videoUrl: '', links: [] } }
   }
 
   function save(data) {
@@ -128,23 +100,13 @@ export default function Resources({ userId }) {
   const [linkInput, setLinkInput] = useState('')
   const [linkName, setLinkName] = useState('')
   const [showLinkAdd, setShowLinkAdd] = useState(false)
-  const [images, setImagesState] = useState(initial.images || [])
-  const [imgInput, setImgInput] = useState('')
-  const [showImgAdd, setShowImgAdd] = useState(false)
 
   // Wrapper setters that also persist
-  function setVideoUrl(v) { setVideoUrlState(v); save({ videoUrl: v, links, images }) }
+  function setVideoUrl(v) { setVideoUrlState(v); save({ videoUrl: v, links }) }
   function setLinks(fn) {
     setLinksState(prev => {
       const next = typeof fn === 'function' ? fn(prev) : fn
-      save({ videoUrl, links: next, images })
-      return next
-    })
-  }
-  function setImages(fn) {
-    setImagesState(prev => {
-      const next = typeof fn === 'function' ? fn(prev) : fn
-      save({ videoUrl, links, images: next })
+      save({ videoUrl, links: next })
       return next
     })
   }
@@ -153,14 +115,14 @@ export default function Resources({ userId }) {
     if (!videoInput.trim()) return
     const v = videoInput.trim()
     setVideoUrlState(v)
-    save({ videoUrl: v, links, images })
+    save({ videoUrl: v, links })
     setShowVideoInput(false)
     setVideoInput('')
   }
 
   function removeVideo() {
     setVideoUrlState('')
-    save({ videoUrl: '', links, images })
+    save({ videoUrl: '', links })
     setShowVideoInput(false)
   }
 
@@ -179,12 +141,6 @@ export default function Resources({ userId }) {
     }
     setLinks(prev => [...prev, newLink])
     setLinkInput(''); setLinkName(''); setShowLinkAdd(false)
-  }
-
-  function addImage() {
-    if (!imgInput.trim()) return
-    setImages(prev => [...prev, { id: 'i' + Date.now(), url: imgInput.trim() }])
-    setImgInput(''); setShowImgAdd(false)
   }
 
   const embedUrl = videoUrl ? getEmbedUrl(videoUrl) : null
@@ -270,31 +226,6 @@ export default function Resources({ userId }) {
           </>
         ) : (
           <button style={s.addToggle} onClick={() => setShowLinkAdd(true)}>+ Add document or link</button>
-        )}
-      </div>
-
-      {/* Image gallery */}
-      <div style={s.card}>
-        <div style={s.clabel}>
-          🖼️ Image gallery
-          <span style={s.tagBadge}>Campaign art</span>
-        </div>
-        {images.length === 0 && <div style={s.empty}>Add campaign art, maps, or character art by URL.</div>}
-        <div style={s.imgGrid}>
-          {images.map(img => (
-            <ImgThumb key={img.id} img={img} onDelete={() => setImages(prev => prev.filter(i => i.id !== img.id))} />
-          ))}
-          <button style={s.imgAddBox} onClick={() => setShowImgAdd(true)}>+</button>
-        </div>
-        {showImgAdd && (
-          <div style={s.urlRow}>
-            <input style={s.urlInput}
-              placeholder="Paste image URL (.jpg, .png, pollinations link...)"
-              value={imgInput} onChange={e => setImgInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && addImage()} autoFocus />
-            <button style={s.urlBtn} onClick={addImage}>Add</button>
-            <button style={s.cancelBtn} onClick={() => { setShowImgAdd(false); setImgInput('') }}>Cancel</button>
-          </div>
         )}
       </div>
 
