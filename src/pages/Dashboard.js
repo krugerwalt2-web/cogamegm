@@ -6,6 +6,8 @@ import Memory from '../components/Memory'
 import OneShotWizard from '../components/OneShotWizard'
 import Resources from '../components/Resources'
 import CombatTracker from '../components/CombatTracker'
+import Sounds from '../components/Sounds'
+import Images from '../components/Images'
 
 const s = {
   app: { maxWidth: 720, margin: '0 auto', padding: '16px 14px' },
@@ -269,14 +271,13 @@ export default function Dashboard({ session }) {
           <div style={s.sub}>Your co-GM at every table</div>
         </div>
         <div style={s.right}>
-          <button style={s.osbtn} onClick={() => setShowOneShot(true)}>⚡ One Shot</button>
           <span style={s.gm}>👤 {gmName}</span>
           <button style={s.signout} onClick={() => supabase.auth.signOut()}>Sign out</button>
         </div>
       </div>
 
       <div style={s.tabs}>
-        {[['campaigns', '📖 Campaigns'], ['memory', '🧠 Memory'], ['session', '▶ Session'], ['character', '⚔️ Character'], ['resources', '📚 Resources']].map(([t, l]) => (
+        {[['campaigns', '📖 Campaigns'], ['memory', '🧠 Memory'], ['session', '▶ Session'], ['character', '⚔️ Character'], ['sounds', '🎵 Sounds'], ['images', '🖼️ Images'], ['resources', '📚 Resources']].map(([t, l]) => (
           <button key={t} style={tab === t ? s.tabOn : s.tab} onClick={() => setTab(t)}>{l}</button>
         ))}
       </div>
@@ -299,12 +300,15 @@ export default function Dashboard({ session }) {
           onCreate={handleCampaignCreate}
           onUpdate={updateCampaign}
           onDelete={deleteCampaign}
+          onOneShot={() => setShowOneShot(true)}
         />
       )}
       {tab === 'memory' && (
         <Memory campaign={activeCampaign} memory={memory} onDelete={deleteMemory} />
       )}
-      {tab === 'character' && <CombatTracker />}
+      {tab === 'character' && <CombatTracker campaign={activeCampaign} onGoToCampaigns={() => setTab('campaigns')} />}
+      {tab === 'sounds' && <Sounds campaign={activeCampaign} onGoToCampaigns={() => setTab('campaigns')} />}
+      {tab === 'images' && <Images campaign={activeCampaign} onGoToCampaigns={() => setTab('campaigns')} />}
       {tab === 'resources' && <Resources userId={session.user.id} />}
     </div>
   )
