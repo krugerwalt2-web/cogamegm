@@ -2,6 +2,7 @@ let ctx = null
 let masterGain = null
 let activeNodes = []
 let activeIntervals = []
+let activeTimeouts = []
 
 function getCtx() {
   if (!ctx) {
@@ -38,81 +39,83 @@ function whiteNoise() {
   return src
 }
 
-function filter(src, type, freq, q) {
+// Every scene gets its OWN gain node feeding into masterGain, so a scene's
+// volume envelope (swells, pulses) never bleeds into other scenes and
+// masterGain itself always stays at a stable, predictable level.
+function sceneGain(val) {
   const ac = getCtx()
-  const f = ac.createBiquadFilter()
-  f.type = type; f.frequency.value = freq
-  if (q) f.Q.value = q
-  src.connect(f); f.connect(masterGain)
-  return f
-}
-
-function gain(src, val) {
-  const ac = getCtx()
-  const g = ac.createGain(); g.gain.value = val
-  src.connect(g); g.connect(masterGain)
+  const g = ac.createGain()
+  g.gain.value = val
+  g.connect(masterGain)
   return g
 }
 
 const BUILDERS = {
   dungeon: () => {
     const ac = getCtx()
-    const n = brownNoise(); filter(n, 'lowpass', 300); n.start()
+    const g = sceneGain(1)
+    const n = brownNoise()
+    const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 300
+    n.connect(f); f.connect(g); n.start()
     const drip = setInterval(() => {
       if (!ctx) return
       const o = ac.createOscillator()
-      const g = ac.createGain()
+      const dg = ac.createGain()
       o.frequency.value = 800 + Math.random() * 400
-      g.gain.setValueAtTime(0.12, ac.currentTime)
-      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.3)
-      o.connect(g); g.connect(masterGain)
+      dg.gain.setValueAtTime(0.12, ac.currentTime)
+      dg.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.3)
+      o.connect(dg); dg.connect(masterGain)
       o.start(); o.stop(ac.currentTime + 0.3)
     }, 3000 + Math.random() * 5000)
-    return { nodes: [n], intervals: [drip] }
+    return { nodes: [n], intervals: [drip], timeouts: [] }
   },
   tavern: () => {
-    const n = whiteNoise()
     const ac = getCtx()
+    const g = sceneGain(0.12)
+    const n = whiteNoise()
     const f = ac.createBiquadFilter()
     f.type = 'bandpass'; f.frequency.value = 1200; f.Q.value = 0.5
-    const g = ac.createGain(); g.gain.value = 0.05
-    n.connect(f); f.connect(g); g.connect(masterGain); n.start()
-    return { nodes: [n], intervals: [] }
+    n.connect(f); f.connect(g); n.start()
+    return { nodes: [n], intervals: [], timeouts: [] }
   },
   forest: () => {
-    const n = whiteNoise()
     const ac = getCtx()
+    const g = sceneGain(0.2)
+    const n = whiteNoise()
     const f = ac.createBiquadFilter()
     f.type = 'bandpass'; f.frequency.value = 600; f.Q.value = 0.3
-    const g = ac.createGain(); g.gain.value = 0.07
-    n.connect(f); f.connect(g); g.connect(masterGain); n.start()
+    n.connect(f); f.connect(g); n.start()
+    const timeouts = []
     const swell = setInterval(() => {
-      if (!masterGain) return
-      masterGain.gain.linearRampToValueAtTime(0.55, ac.currentTime + 2)
-      setTimeout(() => { if (masterGain) masterGain.gain.linearRampToValueAtTime(0.3, ac.currentTime + 3) }, 2200)
+      if (!g) return
+      g.gain.linearRampToValueAtTime(0.4, ac.currentTime + 2)
+      const t = setTimeout(() => { g.gain.linearRampToValueAtTime(0.2, ac.currentTime + 3) }, 2200)
+      timeouts.push(t)
     }, 9000)
-    return { nodes: [n], intervals: [swell] }
+    return { nodes: [n], intervals: [swell], timeouts }
   },
   combat: () => {
-    const n = brownNoise()
     const ac = getCtx()
+    const g = sceneGain(0.5)
+    const n = brownNoise()
     const f = ac.createBiquadFilter(); f.type = 'highpass'; f.frequency.value = 200
-    const g = ac.createGain(); g.gain.value = 0.18
-    n.connect(f); f.connect(g); g.connect(masterGain); n.start()
+    n.connect(f); f.connect(g); n.start()
+    const timeouts = []
     const pulse = setInterval(() => {
-      if (!masterGain) return
-      masterGain.gain.linearRampToValueAtTime(0.65, ac.currentTime + 0.1)
-      setTimeout(() => { if (masterGain) masterGain.gain.linearRampToValueAtTime(0.3, ac.currentTime + 0.2) }, 150)
+      if (!g) return
+      g.gain.linearRampToValueAtTime(0.85, ac.currentTime + 0.1)
+      const t = setTimeout(() => { g.gain.linearRampToValueAtTime(0.5, ac.currentTime + 0.2) }, 150)
+      timeouts.push(t)
     }, 1200)
-    return { nodes: [n], intervals: [pulse] }
+    return { nodes: [n], intervals: [pulse], timeouts }
   },
   mystery: () => {
-    const n = brownNoise()
     const ac = getCtx()
+    const g = sceneGain(0.25)
+    const n = brownNoise()
     const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 400
-    const g = ac.createGain(); g.gain.value = 0.09
-    n.connect(f); f.connect(g); g.connect(masterGain); n.start()
-    return { nodes: [n], intervals: [] }
+    n.connect(f); f.connect(g); n.start()
+    return { nodes: [n], intervals: [], timeouts: [] }
   }
 }
 
@@ -127,13 +130,19 @@ export function playScene(name) {
     const result = builder()
     activeNodes = result.nodes || []
     activeIntervals = result.intervals || []
+    activeTimeouts = result.timeouts || []
   } catch (e) { console.warn('Audio error:', e) }
 }
 
 export function stopAll() {
   activeNodes.forEach(n => { try { n.stop() } catch {} })
   activeIntervals.forEach(clearInterval)
-  activeNodes = []; activeIntervals = []
+  activeTimeouts.forEach(clearTimeout)
+  activeNodes = []; activeIntervals = []; activeTimeouts = []
+  // Always snap master volume back to its default — nothing should be
+  // able to leave it stuck at a ramped-down level between scenes.
+  if (masterGain) masterGain.gain.cancelScheduledValues(ctx.currentTime)
+  if (masterGain) masterGain.gain.value = 0.35
 }
 
 export const SCENE_OPTIONS = [
