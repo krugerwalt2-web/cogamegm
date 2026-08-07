@@ -5,6 +5,7 @@ import Campaigns from '../components/Campaigns'
 import Memory from '../components/Memory'
 import OneShotWizard from '../components/OneShotWizard'
 import Resources from '../components/Resources'
+import CombatTracker from '../components/CombatTracker'
 
 const s = {
   app: { maxWidth: 720, margin: '0 auto', padding: '16px 14px' },
@@ -275,7 +276,7 @@ export default function Dashboard({ session }) {
       </div>
 
       <div style={s.tabs}>
-        {[['campaigns', '📖 Campaigns'], ['memory', '🧠 Memory'], ['session', '▶ Session'], ['resources', '📚 Resources']].map(([t, l]) => (
+        {[['campaigns', '📖 Campaigns'], ['memory', '🧠 Memory'], ['session', '▶ Session'], ['character', '⚔️ Character'], ['resources', '📚 Resources']].map(([t, l]) => (
           <button key={t} style={tab === t ? s.tabOn : s.tab} onClick={() => setTab(t)}>{l}</button>
         ))}
       </div>
@@ -303,6 +304,7 @@ export default function Dashboard({ session }) {
       {tab === 'memory' && (
         <Memory campaign={activeCampaign} memory={memory} onDelete={deleteMemory} />
       )}
+      {tab === 'character' && <CombatTracker />}
       {tab === 'resources' && <Resources userId={session.user.id} />}
     </div>
   )
