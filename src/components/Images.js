@@ -149,7 +149,6 @@ export default function Images({ campaign, onGoToCampaigns }) {
     setShowImgAdd(false)
     setImgInput('')
     setUploadErr('')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaign?.id])
 
   // Stay in sync with images added elsewhere (e.g. generated during Session)
@@ -157,7 +156,6 @@ export default function Images({ campaign, onGoToCampaigns }) {
   useEffect(() => {
     const unsubscribe = subscribeGallery(reload)
     return unsubscribe
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaign?.id])
 
   function addByUrl() {
