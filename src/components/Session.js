@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { askAI, generateImage, detectIntent, buildSystemPrompt } from '../lib/ai'
+import { addGalleryImage } from '../lib/imageGallery'
 
 const TYPE_CONFIG = {
   location:    { label: 'Location',    color: '#6090e0', bg: '#1a2040', icon: '📍' },
@@ -136,6 +137,7 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
         currentImageRef.current = url
         setGeneratedImage(url)
         setImgLoading(false)
+        if (campaign?.id) addGalleryImage(campaign.id, { url, source: 'ai-generated', label: imgPrompt.slice(0, 80) })
 
       } else if (intent === 'note') {
         const reply = await askAI(prompts, text)
@@ -182,6 +184,7 @@ export default function Session({ campaign, memory, onAddMemory, onGoToCampaigns
     currentImageRef.current = url
     setGeneratedImage(url)
     setImgLoading(false)
+    if (campaign?.id) addGalleryImage(campaign.id, { url, source: 'ai-generated', label: clean.slice(0, 80) })
   }
 
   // BUILD 10 FIX: saveToMemory reads from refs, not state
