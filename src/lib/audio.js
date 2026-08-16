@@ -204,21 +204,32 @@ const BUILDERS = {
 //   ambient     — low drones, dark synth pads, minimal eerie soundscape
 //   dramatic    — choir-heavy, operatic, chaotic industrial, overwhelming/high-stakes
 // ---------------------------------------------------------------------
+// All tracks below are by Kevin MacLeod (incompetech.com), licensed under
+// Creative Commons BY 3.0 (https://creativecommons.org/licenses/by/3.0/).
+// This license requires attribution somewhere in the app (e.g. a credits
+// screen) — something like:
+// "Music by Kevin MacLeod (incompetech.com), licensed under CC BY 3.0"
+//
+// These URLs hotlink directly to incompetech's file directory, which is
+// fine for testing, but for production it's worth downloading each file
+// and re-hosting it in your own Supabase bucket instead — that protects
+// you from incompetech ever renaming/moving a file or rate-limiting
+// hotlinked traffic. Swap the url values below once you've done that.
 export const TRACK_LIBRARY = {
   combat: [
-    // { id: 'combat-1', title: 'Steel and Drums', url: 'https://YOUR-PROJECT.supabase.co/storage/v1/object/public/audio/combat-1.mp3' },
+    { id: 'combat-1', title: 'Crusade - Heavy Industry', url: 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Crusade%20-%20Heavy%20Industry.mp3' },
   ],
   mystery: [
-    // { id: 'mystery-1', title: 'Unseen Watcher', url: 'https://.../mystery-1.mp3' },
+    { id: 'mystery-1', title: 'Symmetry', url: 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Symmetry.mp3' },
   ],
   exploration: [
-    // { id: 'exploration-1', title: 'Open Road', url: 'https://.../exploration-1.mp3' },
+    { id: 'exploration-1', title: 'Adventures in Adventureland', url: 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Adventures%20in%20Adventureland.mp3' },
   ],
   ambient: [
-    // { id: 'ambient-1', title: 'Low Static Hum', url: 'https://.../ambient-1.mp3' },
+    { id: 'ambient-1', title: 'SCP-x2x (Unseen Presence)', url: 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/SCP-x2x.mp3' },
   ],
   dramatic: [
-    // { id: 'dramatic-1', title: 'Rising Chorus', url: 'https://.../dramatic-1.mp3' },
+    { id: 'dramatic-1', title: 'Night Vigil', url: 'https://incompetech.com/music/royalty-free/mp3-royaltyfree/Night%20Vigil.mp3' },
   ],
 }
 
