@@ -1,7 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { playScene, SCENE_OPTIONS, TRACK_LIBRARY } from '../lib/audio'
+import { getAudioFiles, addAudioFile, removeAudioFile, subscribeAudioLibrary } from '../lib/audioLibrary'
 
 const STORAGE_KEY = 'cogamegm_sounds_v1'
+
+// Max size for uploaded custom sound clips, kept conservative because
+// they're stored as base64 data URLs in localStorage (shared ~5-10MB
+// quota across the whole app, same constraint as image uploads).
+const MAX_UPLOAD_BYTES = 3 * 1024 * 1024 // 3MB
 
 const s = {
   card: { background: '#1a1830', border: '1px solid #2d2a4a', borderRadius: 12, padding: '16px 20px', marginBottom: 12 },
@@ -13,20 +19,41 @@ const s = {
   trackArrow: { fontSize: 11, padding: '7px 6px', borderRadius: 6, border: '1px solid #2d2a4a', color: '#6b6890', background: '#0f0e17', cursor: 'pointer' },
   trackArrowOn: { fontSize: 11, padding: '7px 6px', borderRadius: 6, border: '1px solid #534AB7', color: '#b4aef5', background: '#1e1a40', cursor: 'pointer' },
   trackLabel: { fontSize: 10, color: '#6b6890', marginTop: 4, width: '100%' },
-  musicRow: { display: 'flex', alignItems: 'center', gap: 8, marginTop: 12, flexWrap: 'wrap' },
   note: { fontSize: 11, color: '#4a3a70', marginTop: 10, lineHeight: 1.5, fontStyle: 'italic' },
   noCamp: { textAlign: 'center', padding: '32px 20px' },
   noCampText: { fontSize: 14, color: '#a49fc8', marginBottom: 16 },
   goBtn: { padding: '9px 20px', background: '#3C3489', color: '#EEEDFE', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' },
+  // Custom sound library section
+  libSection: { marginTop: 18, paddingTop: 14, borderTop: '1px solid #2d2a4a' },
+  libRow: { display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 },
+  libItem: { display: 'flex', alignItems: 'center', gap: 8, background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 8, padding: '8px 10px' },
+  libName: { flex: 1, minWidth: 0, fontSize: 13, color: '#d4cfff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  libSize: { fontSize: 11, color: '#6b6890', flexShrink: 0 },
+  libPlayBtn: { fontSize: 12, padding: '5px 10px', borderRadius: 6, border: '1px solid #2d2a4a', color: '#a49fc8', background: '#1a1830', cursor: 'pointer', flexShrink: 0 },
+  libPlayBtnOn: { fontSize: 12, padding: '5px 10px', borderRadius: 6, border: '1px solid #534AB7', color: '#b4aef5', background: '#1e1a40', cursor: 'pointer', flexShrink: 0 },
+  libDeleteBtn: { fontSize: 12, padding: '5px 8px', borderRadius: 6, border: '1px solid #5a2020', color: '#e06060', background: '#1a1830', cursor: 'pointer', flexShrink: 0 },
+  actionBtn: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 14px', background: '#0f0e17', border: '1px solid #2d2a4a', borderRadius: 8, color: '#a49fc8', fontSize: 13, cursor: 'pointer' },
+  empty: { fontSize: 13, color: '#6b6890', fontStyle: 'italic', padding: '4px 0 8px' },
+  uploadErr: { fontSize: 12, color: '#ff8080', marginTop: 6 },
+}
+
+function formatSize(bytes) {
+  if (!bytes) return ''
+  const kb = bytes / 1024
+  return kb < 1024 ? Math.round(kb) + 'KB' : (kb / 1024).toFixed(1) + 'MB'
 }
 
 export default function Sounds({ campaign, onGoToCampaigns }) {
   const [activeAudio, setActiveAudio] = useState('none')
   const [trackSelections, setTrackSelections] = useState({}) // { sceneId: trackId }
-  const [musicFile, setMusicFile] = useState(null)
-  const [musicPlaying, setMusicPlaying] = useState(false)
-  const audioElemRef = useRef(null)
-  const musicFileRef = useRef(null)
+  const audioElemRef = useRef(null) // scene/track player
+
+  // Custom uploaded sound library — persistent per campaign
+  const [library, setLibrary] = useState([])
+  const [playingClipId, setPlayingClipId] = useState(null)
+  const [uploadErr, setUploadErr] = useState('')
+  const clipElemRef = useRef(null) // custom-clip player, separate from the scene player above
+  const fileRef = useRef(null)
 
   const storageKey = campaign?.id ? STORAGE_KEY + '_' + campaign.id : null
 
@@ -44,9 +71,24 @@ export default function Sounds({ campaign, onGoToCampaigns }) {
       setActiveAudio('none')
       setTrackSelections({})
     }
-    setMusicFile(null)
-    setMusicPlaying(false)
   }, [storageKey])
+
+  function reloadLibrary() {
+    setLibrary(campaign?.id ? getAudioFiles(campaign.id) : [])
+  }
+
+  useEffect(() => {
+    reloadLibrary()
+    setPlayingClipId(null)
+    setUploadErr('')
+    if (clipElemRef.current) clipElemRef.current.pause()
+  }, [campaign?.id])
+
+  // Stay in sync if a clip is added/removed elsewhere (another tab, etc)
+  useEffect(() => {
+    const unsubscribe = subscribeAudioLibrary(reloadLibrary)
+    return unsubscribe
+  }, [campaign?.id])
 
   function persist(nextActiveAudio, nextTrackSelections) {
     if (!storageKey) return
@@ -80,24 +122,57 @@ export default function Sounds({ campaign, onGoToCampaigns }) {
     if (activeAudio === sceneId) playScene(sceneId, nextId)
   }
 
-  function handleMusicFile(e) {
-    const file = e.target.files[0]; if (!file) return
-    setMusicFile({ name: file.name, url: URL.createObjectURL(file) })
-    setMusicPlaying(false)
+  function handleFile(e) {
+    const file = e.target.files[0]
+    e.target.value = '' // allow re-selecting the same file later
+    if (!file || !campaign?.id) return
+    setUploadErr('')
+    if (!file.type.startsWith('audio/')) {
+      setUploadErr('That file doesn\'t look like an audio file.')
+      return
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setUploadErr('Clip is too large (max 3MB) — try a shorter clip or compress it first.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = ev => {
+      try {
+        addAudioFile(campaign.id, { url: ev.target.result, name: file.name, size: file.size })
+        reloadLibrary()
+      } catch {
+        setUploadErr('Could not save that clip — storage may be full. Try deleting an old clip first.')
+      }
+    }
+    reader.onerror = () => setUploadErr('Could not read that file — try again.')
+    reader.readAsDataURL(file)
   }
 
-  function toggleMusic() {
-    if (!audioElemRef.current || !musicFile) return
-    if (musicPlaying) {
-      audioElemRef.current.pause()
-      setMusicPlaying(false)
+  function toggleClip(clip) {
+    if (!clipElemRef.current) return
+    if (playingClipId === clip.id) {
+      clipElemRef.current.pause()
+      setPlayingClipId(null)
     } else {
-      audioElemRef.current.src = musicFile.url
-      audioElemRef.current.loop = true
-      audioElemRef.current.volume = 0.4
-      audioElemRef.current.play().catch(() => {})
-      setMusicPlaying(true)
+      clipElemRef.current.src = clip.url
+      clipElemRef.current.volume = 0.6
+      clipElemRef.current.play().catch(() => {})
+      setPlayingClipId(clip.id)
     }
+  }
+
+  function handleClipEnded() {
+    setPlayingClipId(null)
+  }
+
+  function deleteClip(clip) {
+    if (!campaign?.id) return
+    if (playingClipId === clip.id && clipElemRef.current) {
+      clipElemRef.current.pause()
+      setPlayingClipId(null)
+    }
+    removeAudioFile(campaign.id, clip.id)
+    reloadLibrary()
   }
 
   if (!campaign) return (
@@ -138,19 +213,30 @@ export default function Sounds({ campaign, onGoToCampaigns }) {
           )
         })}
       </div>
-      <div style={s.musicRow}>
-        <button style={s.audioBtn} onClick={() => musicFileRef.current.click()}>
-          📂 {musicFile ? musicFile.name.slice(0, 28) + (musicFile.name.length > 28 ? '...' : '') : 'Load music file'}
-        </button>
-        {musicFile && (
-          <button style={musicPlaying ? s.audioBtnOn : s.audioBtn} onClick={toggleMusic}>
-            {musicPlaying ? '⏸ Pause' : '▶ Play'} music
-          </button>
-        )}
-        <input ref={musicFileRef} type="file" accept="audio/*" style={{ display: 'none' }} onChange={handleMusicFile} />
-        <audio ref={audioElemRef} style={{ display: 'none' }} />
+      <audio ref={audioElemRef} style={{ display: 'none' }} />
+
+      <div style={s.libSection}>
+        <div style={s.clabel}>📼 Custom sound clips — {campaign.name}</div>
+        {library.length === 0 && <div style={s.empty}>Upload one-off sounds — thunder, crashes, growls — that stay saved with this campaign.</div>}
+        <div style={s.libRow}>
+          {library.map(clip => (
+            <div key={clip.id} style={s.libItem}>
+              <span style={s.libName} title={clip.name}>{clip.name}</span>
+              <span style={s.libSize}>{formatSize(clip.size)}</span>
+              <button style={playingClipId === clip.id ? s.libPlayBtnOn : s.libPlayBtn} onClick={() => toggleClip(clip)}>
+                {playingClipId === clip.id ? '⏸ Stop' : '▶ Play'}
+              </button>
+              <button style={s.libDeleteBtn} onClick={() => deleteClip(clip)} title="Delete this clip">🗑️</button>
+            </div>
+          ))}
+        </div>
+        <button style={s.actionBtn} onClick={() => fileRef.current.click()}>📂 Upload sound clip</button>
+        <input ref={fileRef} type="file" accept="audio/*" style={{ display: 'none' }} onChange={handleFile} />
+        {uploadErr && <div style={s.uploadErr}>{uploadErr}</div>}
+        <audio ref={clipElemRef} style={{ display: 'none' }} onEnded={handleClipEnded} />
       </div>
-      <div style={s.note}>Ambient preset and track choice are saved with this campaign. Scenes without a configured track pool fall back to generated ambience. Loaded music files reset when you reload the page — that's a browser limitation, not a bug.</div>
+
+      <div style={s.note}>Ambient preset and track choice are saved with this campaign. Uploaded sound clips are also saved with this campaign and stay available after reloading — delete any clip with the 🗑️ button. Scenes without a configured track pool fall back to generated ambience.</div>
     </div>
   )
 }
